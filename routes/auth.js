@@ -21,8 +21,8 @@ router.post('/send-otp', async (req, res) => {
             return res.status(429).json({ error: result.message, cooldownMs: result.cooldownMs });
         }
         await sendOTPSms(phone, otp);
-        logger.info(`OTP sent to ${phone}: ${otp}`); // Log only in dev
-        res.json({ success: true, message: 'OTP sent successfully', ...(process.env.NODE_ENV !== 'production' && { devOtp: otp }) });
+        logger.info(`OTP sent to ${phone}: ${otp}`);
+        res.json({ success: true, message: 'OTP sent successfully', devOtp: otp });
     } catch (err) {
         logger.error(err.message);
         res.status(500).json({ error: 'Failed to send OTP' });
