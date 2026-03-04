@@ -12,6 +12,7 @@ const path = require('path');
 const logger = require('./utils/logger');
 
 const app = express();
+app.set('trust proxy', 1); // Trust reverse proxy (e.g., Render) for correct IP rate limiting
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*', methods: ['GET', 'POST'] }
