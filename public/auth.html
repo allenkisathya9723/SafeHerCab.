@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login – SafeHer Ride</title>
+    <meta name="description"
+        content="Verify your mobile number to access SafeHer Ride – Hyderabad's Women-Only Cab Service." />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0a12 100%);
+            min-height: 100vh;
+        }
+
+        .auth-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 440px;
+            background: white;
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.5);
+            animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg, var(--black), var(--dark));
+            padding: 36px 36px 28px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 50% 120%, rgba(233, 30, 140, 0.3) 0%, transparent 60%);
+        }
+
+        .auth-header>* {
+            position: relative;
+            z-index: 1;
+        }
+
+        .auth-logo {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        .auth-header h1 {
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 6px;
+        }
+
+        .auth-header p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85rem;
+        }
+
+        .auth-body {
+            padding: 36px;
+        }
+
+        /* Step indicators */
+        .steps-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            margin-bottom: 32px;
+        }
+
+        .step-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            transition: var(--transition);
+        }
+
+        .step-dot.done {
+            background: var(--success);
+            color: white;
+        }
+
+        .step-dot.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: var(--shadow-pink);
+        }
+
+        .step-dot.pending {
+            background: var(--gray-100);
+            color: var(--gray-400);
+        }
+
+        .step-line {
+            height: 2px;
+            width: 48px;
+            background: var(--gray-200);
+            transition: var(--transition);
+        }
+
+        .step-line.done {
+            background: var(--success);
+        }
+
+        /* Phone input with country code */
+        .phone-input-group {
+            display: flex;
+            gap: 0;
+        }
+
+        .country-code {
+            padding: 14px 14px;
+            background: var(--gray-100);
+            border: 1.5px solid transparent;
+            border-right: none;
+            border-radius: var(--radius-md) 0 0 var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .phone-input-group input {
+            flex: 1;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+        }
+
+        /* OTP Timer */
+        .otp-timer {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--gray-500);
+        }
+
+        .otp-timer span {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .resend-btn {
+            background: none;
+            color: var(--primary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .resend-btn:disabled {
+            color: var(--gray-400);
+            cursor: not-allowed;
+        }
+
+        /* Profile step */
+        .profile-avatar-upload {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            padding: 16px;
+            background: var(--gray-100);
+            border-radius: var(--radius-md);
+        }
+
+        .avatar-preview {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--pink-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            border: 2px solid var(--pink-200);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .page-indicator {
+            display: none;
+        }
+
+        .page-indicator.active {
+            display: block;
+        }
+
+        /* Guardian section */
+        .guardian-section {
+            background: var(--pink-50);
+            border: 1px solid var(--pink-200);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .guardian-section h4 {
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="auth-page">
+        <div class="auth-container">
+            <!-- Header -->
+            <div class="auth-header">
+                <div class="auth-logo">🌸</div>
+                <h1>SafeHer Ride</h1>
+                <p id="authHeaderSub">Enter your mobile number to get started</p>
+            </div>
+            <!-- Body -->
+            <div class="auth-body">
+                <!-- Step Indicators -->
+                <div class="steps-indicator">
+                    <div class="step-dot active" id="sdot1">1</div>
+                    <div class="step-line" id="sline1"></div>
+                    <div class="step-dot pending" id="sdot2">2</div>
+                    <div class="step-line" id="sline2"></div>
+                    <div class="step-dot pending" id="sdot3">👤</div>
+                </div>
+
+                <!-- STEP 1: Phone Number -->
+                <div class="page-indicator active" id="step1">
+                    <h2 style="margin-bottom:6px;font-size:1.3rem">Verify Your Number</h2>
+                    <p style="color:var(--gray-500);font-size:0.88rem;margin-bottom:24px">We'll send you a 6-digit OTP
+                        to confirm</p>
+
+                    <div class="form-group" style="margin-bottom:20px">
+                        <label class="form-label">Mobile Number *</label>
+                        <div class="phone-input-group">
+                            <div class="country-code">🇮🇳 +91</div>
+                            <input type="tel" class="form-input" id="phoneInput" placeholder="98765 43210"
+                                maxlength="10" inputmode="numeric" pattern="[0-9]*" autocomplete="tel-national" />
+                        </div>
+                        <span class="form-hint">Enter your 10-digit Hyderabad mobile number</span>
+                        <span class="form-error" id="phoneError" style="display:none"></span>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:24px">
+                        <label class="form-label">Email (Optional)</label>
+                        <div class="form-input-icon">
+                            <i class="fa-solid fa-envelope icon"></i>
+                            <input type="email" class="form-input" id="emailInput" placeholder="yourname@gmail.com"
+                                autocomplete="email" />
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" style="width:100%" id="sendOtpBtn" onclick="sendOTP()">
+                        <i class="fa-solid fa-paper-plane"></i> Send OTP
+                    </button>
+                </div>
+
+                <!-- STEP 2: OTP Verification -->
+                <div class="page-indicator" id="step2">
+                    <h2 style="margin-bottom:6px;font-size:1.3rem">Enter OTP</h2>
+                    <p style="color:var(--gray-500);font-size:0.88rem;margin-bottom:8px" id="otpSentMsg">OTP sent to
+                        <strong id="sentPhone"></strong></p>
+                    <p style="color:var(--gray-500);font-size:0.8rem;margin-bottom:24px">(For demo: check server console
+                        for OTP)</p>
+
+                    <div class="otp-inputs" id="otpInputs">
+                        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="otp0" />
+                        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="otp1" />
+                        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="otp2" />
+                        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="otp3" />
+                        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="otp4" />
+                        <input class="otp-box" type="text" maxlength="1" inputmode="numeric" id="otp5" />
+                    </div>
+
+                    <div class="otp-timer" style="margin:20px 0">
+                        <span id="timerDisplay">Resend OTP in <span id="countdown">60</span>s</span>
+                        <button class="resend-btn" id="resendBtn" disabled onclick="resendOTP()"
+                            style="display:none">Resend OTP</button>
+                    </div>
+
+                    <span class="form-error" id="otpError"
+                        style="display:none;text-align:center;display:block;margin-bottom:12px"></span>
+
+                    <div style="display:flex;gap:10px">
+                        <button class="btn btn-outline" style="flex:1" onclick="goStep(1)">
+                            <i class="fa-solid fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn btn-primary" style="flex:2" id="verifyOtpBtn" onclick="verifyOTP()">
+                            <i class="fa-solid fa-check-circle"></i> Verify OTP
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Profile Setup -->
+                <div class="page-indicator" id="step3">
+                    <h2 style="margin-bottom:6px;font-size:1.3rem">Complete Your Profile</h2>
+                    <p style="color:var(--gray-500);font-size:0.88rem;margin-bottom:24px">Quick setup for a personalized
+                        experience</p>
+
+                    <div class="profile-avatar-upload">
+                        <div class="avatar-preview" id="avatarPreview">👤</div>
+                        <div>
+                            <div style="font-weight:600;font-size:0.9rem;margin-bottom:4px">Profile Photo</div>
+                            <div style="font-size:0.8rem;color:var(--gray-500);margin-bottom:8px">Optional – helps
+                                drivers recognize you</div>
+                            <input type="file" id="avatarInput" accept="image/*" style="display:none"
+                                onchange="previewAvatar(this)" />
+                            <button class="btn btn-outline btn-sm"
+                                onclick="document.getElementById('avatarInput').click()">
+                                <i class="fa-solid fa-camera"></i> Upload
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:16px">
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" class="form-input" id="nameInput" placeholder="e.g. Priya Reddy"
+                            autocomplete="name" />
+                    </div>
+
+                    <div class="guardian-section">
+                        <h4><i class="fa-solid fa-shield-halved"></i> Emergency Guardian</h4>
+                        <div class="form-group">
+                            <label class="form-label">Guardian's Mobile Number</label>
+                            <div class="phone-input-group">
+                                <div class="country-code">🇮🇳 +91</div>
+                                <input type="tel" class="form-input" id="guardianPhone" placeholder="98765 43210"
+                                    maxlength="10" inputmode="numeric" />
+                            </div>
+                            <span class="form-hint">SOS alerts will be sent to this number</span>
+                        </div>
+                        <div class="form-group" style="margin-top:12px">
+                            <label class="form-label">Guardian Name</label>
+                            <input type="text" class="form-input" id="guardianName"
+                                placeholder="e.g. Amma / Naanna / Husband" />
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" style="width:100%;margin-top:24px" id="completeProfileBtn"
+                        onclick="completeProfile()">
+                        <i class="fa-solid fa-check"></i> Complete & Start Riding 🌸
+                    </button>
+                    <button class="btn" style="width:100%;margin-top:8px;color:var(--gray-500);font-size:0.85rem"
+                        onclick="skipProfile()">
+                        Skip for now →
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="js/app.js"></script>
+    <script>
+        // ── State ──
+        let currentStep = 1;
+        let phoneNumber = '';
+        let timerInterval;
+
+        // Auto-redirect if already logged in
+        const existingToken = localStorage.getItem('safehercab_token');
+        if (existingToken) window.location.href = 'booking.html';
+
+        // ── OTP Box keyboard behavior ──
+        document.querySelectorAll('.otp-box').forEach((box, i) => {
+            box.addEventListener('input', (e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                e.target.value = val;
+                if (val && i < 5) document.getElementById(`otp${i + 1}`).focus();
+                e.target.classList.toggle('filled', !!val);
+            });
+            box.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !box.value && i > 0) {
+                    document.getElementById(`otp${i - 1}`).focus();
+                }
+            });
+            box.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+                [...pasted].forEach((ch, idx) => {
+                    const el = document.getElementById(`otp${idx}`);
+                    if (el) { el.value = ch; el.classList.add('filled'); }
+                });
+                if (pasted.length === 6) document.getElementById('otp5').focus();
+            });
+        });
+
+        // ── Phone validation ──
+        function validatePhone(p) { return /^[6-9]\d{9}$/.test(p); }
+
+        // ── Send OTP ──
+        async function sendOTP() {
+            const raw = document.getElementById('phoneInput').value.replace(/\D/g, '');
+            const errEl = document.getElementById('phoneError');
+            if (!validatePhone(raw)) {
+                errEl.textContent = 'Please enter a valid 10-digit Indian mobile number';
+                errEl.style.display = 'block';
+                return;
+            }
+            errEl.style.display = 'none';
+            phoneNumber = raw;
+
+            const btn = document.getElementById('sendOtpBtn');
+            btn.classList.add('loading'); btn.disabled = true;
+
+            try {
+                const res = await API.post('/auth/send-otp', { phone: raw });
+                if (res.devOtp) showToast(`✅ Dev OTP: ${res.devOtp}`, 'info');
+                document.getElementById('sentPhone').textContent = `+91 ${raw}`;
+                goStep(2);
+                startTimer(60);
+            } catch (e) {
+                showToast(e.message || 'Failed to send OTP', 'error');
+            } finally {
+                btn.classList.remove('loading'); btn.disabled = false;
+            }
+        }
+
+        // ── Verify OTP ──
+        async function verifyOTP() {
+            const otp = ['otp0', 'otp1', 'otp2', 'otp3', 'otp4', 'otp5'].map(id => document.getElementById(id).value).join('');
+            const errEl = document.getElementById('otpError');
+            if (otp.length < 6) {
+                errEl.textContent = 'Please enter all 6 digits'; errEl.style.display = 'block'; return;
+            }
+            errEl.style.display = 'none';
+
+            const btn = document.getElementById('verifyOtpBtn');
+            btn.classList.add('loading'); btn.disabled = true;
+
+            try {
+                const res = await API.post('/auth/verify-otp', { phone: phoneNumber, otp });
+                localStorage.setItem('safehercab_token', res.token);
+                localStorage.setItem('safehercab_user', JSON.stringify(res.user));
+                clearInterval(timerInterval);
+                if (res.user.isNew) { goStep(3); }
+                else { showToast('Welcome back! 🌸', 'success'); setTimeout(() => window.location.href = 'booking.html', 1200); }
+            } catch (e) {
+                errEl.textContent = e.message || 'Invalid OTP'; errEl.style.display = 'block';
+                // Shake effect
+                document.getElementById('otpInputs').style.animation = 'none';
+                setTimeout(() => { document.getElementById('otpInputs').style.animation = 'fadeInUp 0.3s'; }, 10);
+            } finally {
+                btn.classList.remove('loading'); btn.disabled = false;
+            }
+        }
+
+        // ── Complete Profile ──
+        async function completeProfile() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (!name) { showToast('Please enter your name', 'error'); return; }
+            const btn = document.getElementById('completeProfileBtn');
+            btn.classList.add('loading'); btn.disabled = true;
+            try {
+                const body = {
+                    phone: phoneNumber,
+                    name,
+                    email: document.getElementById('emailInput').value,
+                    guardianPhone: document.getElementById('guardianPhone').value.replace(/\D/g, ''),
+                    guardianName: document.getElementById('guardianName').value
+                };
+                const res = await API.post('/auth/register', body);
+                localStorage.setItem('safehercab_token', res.token);
+                localStorage.setItem('safehercab_user', JSON.stringify(res.user));
+                showToast('Profile saved! Welcome to SafeHer Ride 🌸', 'success');
+                setTimeout(() => window.location.href = 'booking.html', 1500);
+            } catch (e) {
+                showToast(e.message || 'Failed to save profile', 'error');
+            } finally {
+                btn.classList.remove('loading'); btn.disabled = false;
+            }
+        }
+
+        function skipProfile() {
+            showToast('Welcome to SafeHer Ride! 🌸 You can complete profile later.', 'info');
+            setTimeout(() => window.location.href = 'booking.html', 1200);
+        }
+
+        // ── Steps navigation ──
+        const stepHeaders = ['Enter your mobile number to get started', 'Enter the 6-digit OTP sent to your phone', 'Set up your safety profile'];
+        function goStep(n) {
+            currentStep = n;
+            document.querySelectorAll('.page-indicator').forEach((el, i) => {
+                el.classList.toggle('active', i === n - 1);
+            });
+            document.getElementById('authHeaderSub').textContent = stepHeaders[n - 1];
+            // Update step dots
+            ['sdot1', 'sdot2', 'sdot3'].forEach((id, i) => {
+                const dot = document.getElementById(id);
+                if (i < n - 1) { dot.className = 'step-dot done'; dot.innerHTML = '<i class="fa-solid fa-check"></i>'; }
+                else if (i === n - 1) { dot.className = 'step-dot active'; dot.textContent = i + 1 === 3 ? '👤' : i + 1; }
+                else { dot.className = 'step-dot pending'; dot.textContent = i + 1 === 3 ? '👤' : i + 1; }
+            });
+            ['sline1', 'sline2'].forEach((id, i) => {
+                document.getElementById(id).className = 'step-line' + (i < n - 1 ? ' done' : '');
+            });
+        }
+
+        // ── OTP Timer ──
+        function startTimer(seconds) {
+            let remaining = seconds;
+            const timerDisplay = document.getElementById('timerDisplay');
+            const resendBtn = document.getElementById('resendBtn');
+            const countdown = document.getElementById('countdown');
+            clearInterval(timerInterval);
+            timerDisplay.style.display = 'block';
+            resendBtn.style.display = 'none';
+            timerInterval = setInterval(() => {
+                remaining--;
+                countdown.textContent = remaining;
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    timerDisplay.style.display = 'none';
+                    resendBtn.style.display = 'block';
+                    resendBtn.disabled = false;
+                }
+            }, 1000);
+        }
+        async function resendOTP() {
+            document.getElementById('resendBtn').disabled = true;
+            try {
+                const res = await API.post('/auth/send-otp', { phone: phoneNumber });
+                if (res.devOtp) showToast(`✅ Dev OTP: ${res.devOtp}`, 'info');
+                showToast('OTP resent!', 'success');
+                startTimer(60);
+                // Clear OTP boxes
+                for (let i = 0; i < 6; i++) { const el = document.getElementById(`otp${i}`); el.value = ''; el.classList.remove('filled'); }
+                document.getElementById('otp0').focus();
+            } catch (e) {
+                showToast(e.message || 'Failed to resend', 'error');
+                document.getElementById('resendBtn').disabled = false;
+            }
+        }
+        function previewAvatar(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const preview = document.getElementById('avatarPreview');
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        // Enter key support
+        document.getElementById('phoneInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') sendOTP(); });
+    </script>
+</body>
+
+</html>

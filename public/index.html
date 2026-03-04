@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeHer Ride – Hyderabad Women's Safety Transport</title>
+  <meta name="description"
+    content="SafeHer Ride is Hyderabad's premier women-only cab service. Book safe rides with verified female drivers. Your safety, our responsibility." />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      background: linear-gradient(135deg, #0a0a0a 0%, #1a0a12 40%, #2d0a1e 100%);
+      position: relative;
+      overflow: hidden;
+      padding-top: var(--nav-height);
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 60% 50%, rgba(233, 30, 140, 0.15) 0%, transparent 60%);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+      width: 100%;
+    }
+
+    .hero-title {
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 900;
+      color: white;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+
+    .hero-title span {
+      display: block;
+    }
+
+    .hero-subtitle {
+      font-size: 1.1rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 36px;
+      max-width: 440px;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 32px;
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .hero-stat .num {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .hero-stat .label {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Floating phone mockup */
+    .hero-visual {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .phone-mockup {
+      width: 260px;
+      padding: 20px 14px;
+      background: linear-gradient(135deg, #1f1f1f, #0f0f0f);
+      border-radius: 36px;
+      border: 2px solid rgba(233, 30, 140, 0.3);
+      box-shadow: 0 40px 100px rgba(233, 30, 140, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      animation: float 4s ease-in-out infinite;
+    }
+
+    .phone-screen {
+      background: #f8f9fa;
+      border-radius: 24px;
+      padding: 14px;
+      overflow: hidden;
+    }
+
+    .phone-map {
+      height: 130px;
+      background: linear-gradient(135deg, #e8f4f8, #d4edda);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .phone-map::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><rect width="40" height="40" fill="none" stroke="%23ccc" stroke-width="0.5"/></svg>') repeat;
+      opacity: 0.3;
+    }
+
+    .phone-pin {
+      z-index: 1;
+      filter: drop-shadow(0 4px 8px rgba(233, 30, 140, 0.5));
+      font-size: 2rem;
+    }
+
+    .phone-driver {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .phone-driver img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--primary);
+    }
+
+    .phone-driver-info .name {
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .phone-driver-info .rating {
+      font-size: 0.65rem;
+      color: var(--warning);
+    }
+
+    .phone-btn {
+      margin-top: 8px;
+      text-align: center;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* Floating badges */
+    .float-badge {
+      position: absolute;
+      padding: 8px 14px;
+      border-radius: var(--radius-full);
+      font-size: 0.75rem;
+      font-weight: 600;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .float-badge-1 {
+      top: 20px;
+      right: -20px;
+      background: white;
+      color: var(--primary);
+      box-shadow: var(--shadow-md);
+      animation-delay: 0.5s;
+    }
+
+    .float-badge-2 {
+      bottom: 20px;
+      left: -20px;
+      background: var(--primary);
+      color: white;
+      box-shadow: var(--shadow-pink);
+      animation-delay: 1s;
+    }
+
+    /* Features section */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      padding: 32px 24px;
+      border-radius: var(--radius-xl);
+      text-align: center;
+      background: white;
+      box-shadow: var(--shadow-md);
+      transition: var(--transition);
+      border: 1px solid var(--gray-100);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-pink);
+      border-color: var(--pink-200);
+    }
+
+    .feature-icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 24px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      background: linear-gradient(135deg, var(--pink-50), var(--pink-100));
+    }
+
+    .feature-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+
+    .feature-card p {
+      font-size: 0.9rem;
+      color: var(--gray-500);
+      line-height: 1.6;
+    }
+
+    /* How it works */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      position: relative;
+    }
+
+    .steps-grid::before {
+      content: '';
+      position: absolute;
+      top: 28px;
+      left: 12.5%;
+      right: 12.5%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      z-index: 0;
+    }
+
+    .step-card {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-num {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+      font-size: 1.2rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      box-shadow: var(--shadow-pink);
+    }
+
+    .step-card h4 {
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+    }
+
+    .step-card p {
+      font-size: 0.8rem;
+      color: var(--gray-500);
+    }
+
+    /* CTA section */
+    .cta-section {
+      background: linear-gradient(135deg, var(--black), var(--dark));
+      color: white;
+      text-align: center;
+      border-radius: var(--radius-xl);
+      padding: 80px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 50%, rgba(233, 30, 140, 0.2) 0%, transparent 70%);
+    }
+
+    /* Areas covered */
+    .areas-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .area-chip {
+      padding: 6px 16px;
+      background: var(--pink-50);
+      color: var(--primary);
+      border: 1px solid var(--pink-200);
+      border-radius: var(--radius-full);
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: var(--transition-fast);
+    }
+
+    .area-chip:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--black);
+      color: white;
+      padding: 60px 0 24px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .footer-brand {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+
+    .footer-desc {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.5);
+      line-height: 1.7;
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .footer-links a {
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.5);
+      transition: var(--transition-fast);
+    }
+
+    .footer-links a:hover {
+      color: var(--primary);
+    }
+
+    .footer-bottom {
+      border-top: 1px solid var(--dark-border);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-bottom p {
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Mobile nav drawer */
+    .nav-drawer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+    }
+
+    .nav-drawer.open {
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .nav-drawer-content {
+      width: 100%;
+      background: white;
+      border-radius: 24px 24px 0 0;
+      padding: 28px 24px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transform: translateY(100%);
+      transition: var(--transition);
+    }
+
+    .nav-drawer.open .nav-drawer-content {
+      transform: translateY(0);
+    }
+
+    .nav-drawer-link {
+      padding: 14px;
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--black);
+      transition: var(--transition-fast);
+    }
+
+    .nav-drawer-link:hover {
+      background: var(--pink-50);
+      color: var(--primary);
+    }
+
+    @media (max-width: 900px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+        text-align: center;
+      }
+
+      .hero-visual {
+        display: none;
+      }
+
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .steps-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .steps-grid::before {
+        display: none;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .steps-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-stats {
+        gap: 20px;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navigation -->
+  <nav class="navbar" id="navbar">
+    <a href="index.html" class="nav-brand">
+      <div class="logo-icon">🌸</div>
+      SafeHer Ride
+    </a>
+    <div class="nav-links">
+      <a href="index.html" class="active">Home</a>
+      <a href="booking.html">Book Ride</a>
+      <a href="history.html">History</a>
+      <a href="#areas">Coverage</a>
+      <a href="#safety">Safety</a>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <a href="auth.html" class="btn btn-primary btn-sm" id="navAuthBtn">Get Started</a>
+      <button onclick="logout()" class="btn btn-sm"
+        style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.15)"
+        title="Logout" id="navLogoutBtn">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+      </button>
+      <button class="nav-hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile Drawer -->
+  <div class="nav-drawer" id="navDrawer" onclick="closeDrawer(event)">
+    <div class="nav-drawer-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <span style="font-size:1.1rem;font-weight:700;color:var(--primary)">🌸 SafeHer Ride</span>
+        <button onclick="document.getElementById('navDrawer').classList.remove('open')"
+          style="background:none;font-size:1.3rem">✕</button>
+      </div>
+      <a href="index.html" class="nav-drawer-link">🏠 Home</a>
+      <a href="booking.html" class="nav-drawer-link">🚖 Book Ride</a>
+      <a href="history.html" class="nav-drawer-link">📋 Ride History</a>
+      <a href="#areas" class="nav-drawer-link">📍 Coverage Areas</a>
+      <a href="auth.html" class="btn btn-primary" style="margin-top:12px">Get Started</a>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div class="animate-fade-in-up">
+          <div class="badge badge-primary" style="margin-bottom:20px;display:inline-flex">
+            <i class="fa-solid fa-shield-halved"></i>
+            Hyderabad's #1 Women-Only Cab
+          </div>
+          <h1 class="hero-title">
+            <span>Your Safety,</span>
+            <span class="text-gradient">Our Responsibility.</span>
+            <span style="color:rgba(255,255,255,0.6);font-size:0.55em;font-weight:400;margin-top:8px;display:block">Ride
+              Safe. Ride Smart. Ride SafeHer. 🌸</span>
+          </h1>
+          <p class="hero-subtitle">
+            Book cabs, autos, and bikes driven exclusively by verified female drivers.
+            Real-time tracking, SOS emergency alerts, and guardian monitoring — all in one app.
+          </p>
+          <div class="hero-actions">
+            <a href="auth.html" class="btn btn-primary btn-lg">
+              <i class="fa-solid fa-car-side"></i> Book a Ride
+            </a>
+            <a href="#features" class="btn btn-white btn-lg">
+              <i class="fa-solid fa-play"></i> See How It Works
+            </a>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <div class="num">50K+</div>
+              <div class="label">Safe Rides</div>
+            </div>
+            <div class="hero-stat">
+              <div class="num">800+</div>
+              <div class="label">Female Drivers</div>
+            </div>
+            <div class="hero-stat">
+              <div class="num">4.9★</div>
+              <div class="label">Rating</div>
+            </div>
+            <div class="hero-stat">
+              <div class="num">24/7</div>
+              <div class="label">Emergency</div>
+            </div>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="phone-mockup">
+            <div class="phone-screen">
+              <div class="phone-map">
+                <div class="phone-pin">📍</div>
+              </div>
+              <div class="phone-driver">
+                <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Driver" />
+                <div class="phone-driver-info">
+                  <div class="name">Anjali Reddy</div>
+                  <div class="rating">⭐ 4.9 · Arriving in 3 min</div>
+                </div>
+              </div>
+              <div class="phone-btn">🌸 Track Live Ride</div>
+            </div>
+          </div>
+          <div class="float-badge float-badge-1">🛡️ SOS Protected</div>
+          <div class="float-badge float-badge-2">📍 Live Tracking</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="section" id="features">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:56px">
+        <h2>Built for Women, <span class="text-gradient">By Women's Safety First</span></h2>
+        <p style="color:var(--gray-500);margin-top:12px;font-size:1.05rem">Every feature designed with your safety in
+          mind</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🔒</div>
+          <h3>OTP Verified Access</h3>
+          <p>Phone + email OTP verification ensures only genuine users and drivers access the platform.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👩</div>
+          <h3>Female Drivers Only</h3>
+          <p>All drivers are verified women with background checks, license verification, and safety training.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📍</div>
+          <h3>Real-Time Live Tracking</h3>
+          <p>Track your ride live on the map. Share your location with family and friends instantly.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🚨</div>
+          <h3>One-Touch SOS</h3>
+          <p>Press SOS to instantly alert your guardian, nearest police station, and our emergency team simultaneously.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">👨‍👩‍👧</div>
+          <h3>Guardian Tracking</h3>
+          <p>Enable live ride sharing for parents. They see your route, driver details, and ride status in real-time.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🤖</div>
+          <h3>Predictive Safety AI</h3>
+          <p>Auto-detects route deviations, long stops, and night-time risks. Alerts you and your guardian proactively.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📡</div>
+          <h3>Offline Mode Safety</h3>
+          <p>If internet fails mid-ride, emergency SMS with last GPS location is automatically sent to your guardian.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🏢</div>
+          <h3>Police Station Alerts</h3>
+          <p>SOS auto-detects and notifies the nearest Hyderabad police station with your location and ride details.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💳</div>
+          <h3>Multiple Payments</h3>
+          <p>Pay via UPI, credit/debit cards, wallet, or cash. All transactions are secure and transparent.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section class="section" style="background:var(--gray-100)" id="how">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:56px">
+        <h2>How <span class="text-gradient">SafeHer Ride</span> Works</h2>
+      </div>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="phone-map"
+            style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 16px;background:var(--pink-100)">
+            📱</div>
+          <h4>Verify Mobile</h4>
+          <p>Enter your phone number and verify with OTP</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="phone-map"
+            style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 16px;background:var(--pink-100)">
+            📍</div>
+          <h4>Enter Location</h4>
+          <p>Choose pickup &amp; drop within Hyderabad</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="phone-map"
+            style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 16px;background:var(--pink-100)">
+            👩</div>
+          <h4>Choose Driver</h4>
+          <p>Select from verified female drivers nearby</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="phone-map"
+            style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin:0 auto 16px;background:var(--pink-100)">
+            🛡️</div>
+          <h4>Ride Safely</h4>
+          <p>Track live, SOS protected, guardian watching</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Areas Covered -->
+  <section class="section" id="areas">
+    <div class="container">
+      <div style="text-align:center;margin-bottom:40px">
+        <h2>Serving All of <span class="text-gradient">Hyderabad</span></h2>
+        <p style="color:var(--gray-500);margin-top:12px">Available across 100+ areas in Hyderabad &amp; Secunderabad</p>
+      </div>
+      <div class="areas-grid">
+        <span class="area-chip">Banjara Hills</span><span class="area-chip">Jubilee Hills</span><span
+          class="area-chip">Madhapur</span>
+        <span class="area-chip">Gachibowli</span><span class="area-chip">HITEC City</span><span
+          class="area-chip">Kondapur</span>
+        <span class="area-chip">Ameerpet</span><span class="area-chip">Begumpet</span><span
+          class="area-chip">Secunderabad</span>
+        <span class="area-chip">Kukatpally</span><span class="area-chip">KPHB</span><span
+          class="area-chip">Miyapur</span>
+        <span class="area-chip">Uppal</span><span class="area-chip">LB Nagar</span><span
+          class="area-chip">Dilsukhnagar</span>
+        <span class="area-chip">Charminar</span><span class="area-chip">Abids</span><span
+          class="area-chip">Nampally</span>
+        <span class="area-chip">Himayatnagar</span><span class="area-chip">Somajiguda</span><span class="area-chip">SR
+          Nagar</span>
+        <span class="area-chip">Moosapet</span><span class="area-chip">Balanagar</span><span
+          class="area-chip">Nallagandla</span>
+        <span class="area-chip">Manikonda</span><span class="area-chip">Narsingi</span><span
+          class="area-chip">Attapur</span>
+        <span class="area-chip">Mehdipatnam</span><span class="area-chip">Tolichowki</span><span class="area-chip">Film
+          Nagar</span>
+        <span class="area-chip">Saroornagar</span><span class="area-chip">Mallapur</span><span
+          class="area-chip">Malkajgiri</span>
+        <span class="area-chip">Kompally</span><span class="area-chip">Alwal</span><span
+          class="area-chip">Bowenpally</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="section-sm">
+    <div class="container">
+      <div class="cta-section">
+        <div style="position:relative;z-index:1">
+          <div style="font-size:3rem;margin-bottom:20px">🌸</div>
+          <h2 style="color:white;margin-bottom:16px">Start Riding Safely Today</h2>
+          <p style="color:rgba(255,255,255,0.6);margin-bottom:36px;font-size:1rem">Join 50,000+ women who trust SafeHer
+            Ride for their daily commute in Hyderabad</p>
+          <a href="auth.html" class="btn btn-primary btn-xl">
+            <i class="fa-solid fa-shield-halved"></i> Book Your First Ride Free
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="footer-brand">🌸 SafeHer Ride</div>
+          <p class="footer-desc">Hyderabad's #1 women-only cab service. Safe, reliable, and exclusively operated by
+            verified female drivers. Your safety, our responsibility.</p>
+          <div style="display:flex;gap:12px;margin-top:20px">
+            <a href="#"
+              style="width:36px;height:36px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;transition:all 0.2s"
+              onmouseover="this.style.background='var(--primary)'"
+              onmouseout="this.style.background='rgba(255,255,255,0.1)'"><i class="fa-brands fa-facebook"></i></a>
+            <a href="#"
+              style="width:36px;height:36px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;transition:all 0.2s"
+              onmouseover="this.style.background='var(--primary)'"
+              onmouseout="this.style.background='rgba(255,255,255,0.1)'"><i class="fa-brands fa-instagram"></i></a>
+            <a href="#"
+              style="width:36px;height:36px;background:rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;transition:all 0.2s"
+              onmouseover="this.style.background='var(--primary)'"
+              onmouseout="this.style.background='rgba(255,255,255,0.1)'"><i class="fa-brands fa-twitter"></i></a>
+          </div>
+        </div>
+        <div>
+          <h4
+            style="margin-bottom:20px;font-size:0.9rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px">
+            Services</h4>
+          <ul class="footer-links">
+            <li><a href="booking.html">Book a Cab</a></li>
+            <li><a href="booking.html">Auto Rickshaw</a></li>
+            <li><a href="booking.html">Bike Ride</a></li>
+            <li><a href="history.html">Ride History</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4
+            style="margin-bottom:20px;font-size:0.9rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px">
+            Safety</h4>
+          <ul class="footer-links">
+            <li><a href="#">SOS Emergency</a></li>
+            <li><a href="#">Guardian Tracking</a></li>
+            <li><a href="#">Driver Verification</a></li>
+            <li><a href="#">Safety Guidelines</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4
+            style="margin-bottom:20px;font-size:0.9rem;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:1px">
+            Emergency</h4>
+          <ul class="footer-links">
+            <li><a href="tel:100">Police: 100</a></li>
+            <li><a href="tel:1091">Women Helpline: 1091</a></li>
+            <li><a href="tel:112">Emergency: 112</a></li>
+            <li><a href="mailto:sos@safehercab.in">SOS Email</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 SafeHer Ride. Made with 🌸 in Hyderabad. All rights reserved.</p>
+        <p style="display:flex;gap:16px"><a href="#" style="color:rgba(255,255,255,0.3)">Privacy Policy</a><a href="#"
+            style="color:rgba(255,255,255,0.3)">Terms of Service</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="js/app.js"></script>
+  <script>
+    // Hamburger
+    document.getElementById('hamburger').addEventListener('click', () => {
+      document.getElementById('navDrawer').classList.add('open');
+    });
+    function closeDrawer(e) {
+      if (e.target === document.getElementById('navDrawer')) {
+        document.getElementById('navDrawer').classList.remove('open');
+      }
+    }
+    // Navbar scroll
+    window.addEventListener('scroll', () => {
+      const nb = document.getElementById('navbar');
+      nb.style.boxShadow = window.scrollY > 50 ? 'var(--shadow-md)' : '';
+    });
+    // Authentication Guard & Navbar State
+    window.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('safehercab_token');
+      // If no token exists, force redirect to login
+      if (!token) {
+        window.location.href = 'auth.html';
+        return; // Stop execution
+      }
+
+      // If securely logged in, update Navbar auth state
+      const user = localStorage.getItem('safehercab_user');
+      const authBtnContainer = document.querySelector('.nav-links'); // target the links container
+      if (user && authBtnContainer) {
+        const loginBtn = Array.from(authBtnContainer.querySelectorAll('.btn')).find(b => b.textContent.includes('Login'));
+        if (loginBtn) {
+          loginBtn.textContent = 'Logout';
+          loginBtn.href = '#';
+          loginBtn.onclick = (e) => {
+            e.preventDefault();
+            logout();
+          };
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book a Ride – SafeHer Ride</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        body {
+            background: var(--gray-100);
+        }
+
+        .booking-layout {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            height: 100vh;
+            gap: 0;
+        }
+
+        .booking-panel {
+            background: white;
+            overflow-y: auto;
+            box-shadow: 2px 0 16px rgba(0, 0, 0, 0.08);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .booking-panel-header {
+            padding: 20px 24px;
+            background: linear-gradient(135deg, var(--black), var(--dark));
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .booking-panel-header .brand {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .booking-panel-body {
+            padding: 24px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .map-panel {
+            position: relative;
+        }
+
+        #bookingMap {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Location inputs */
+        .location-inputs {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .location-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+        }
+
+        .location-row:first-child {
+            border-bottom: 1px dashed var(--gray-200);
+        }
+
+        .location-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .location-dot.pickup {
+            background: var(--success);
+        }
+
+        .location-dot.drop {
+            background: var(--primary);
+        }
+
+        .location-input {
+            flex: 1;
+            background: var(--gray-100);
+            border: 1.5px solid transparent;
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            font-size: 0.9rem;
+            color: var(--black);
+            transition: var(--transition-fast);
+        }
+
+        .location-input:focus {
+            background: white;
+            border-color: var(--primary);
+        }
+
+        .location-input::placeholder {
+            color: var(--gray-400);
+        }
+
+        /* Fare card */
+        .fare-card {
+            background: linear-gradient(135deg, var(--pink-50), white);
+            border: 1px solid var(--pink-200);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .fare-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .fare-amount {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        /* Driver list */
+        .drivers-section {
+            display: none;
+        }
+
+        .drivers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        /* Guardian toggle bar */
+        .guardian-bar {
+            background: var(--pink-50);
+            border: 1px solid var(--pink-200);
+            border-radius: var(--radius-md);
+            padding: 14px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        /* Suggestions dropdown */
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            z-index: 9999;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .suggestion-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: var(--transition-fast);
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .suggestion-item:hover {
+            background: var(--pink-50);
+            color: var(--primary);
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Mobile layout */
+        @media (max-width: 768px) {
+            .booking-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .map-panel {
+                height: 280px;
+                order: -1;
+            }
+
+            .booking-panel {
+                height: auto;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Auth Guard -->
+    <div class="auth-required" id="authGuard" style="display:none">
+        <div style="text-align:center;padding:40px">
+            <div style="font-size:3rem;margin-bottom:16px">🔒</div>
+            <h3>Login Required</h3>
+            <p style="color:var(--gray-500);margin-bottom:24px">Please verify your mobile number to book a ride</p>
+            <a href="auth.html" class="btn btn-primary">Verify Now</a>
+        </div>
+    </div>
+
+    <div class="booking-layout">
+        <!-- Left Panel -->
+        <div class="booking-panel">
+            <div class="booking-panel-header">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                    <div>
+                        <div class="brand">🌸 SafeHer Ride</div>
+                        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5)">Book your safe ride</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <div id="userInfo" style="font-size:0.85rem;color:rgba(255,255,255,0.7)"></div>
+                        <a href="index.html" style="color:rgba(255,255,255,0.5);font-size:0.8rem">← Home</a>
+                        <button onclick="logout()"
+                            style="background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.2);border-radius:var(--radius-md);padding:5px 10px;font-size:0.75rem;cursor:pointer">
+                            <i class="fa-solid fa-right-from-bracket"></i> Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="booking-panel-body">
+                <!-- Location Inputs -->
+                <div class="location-inputs" style="position:relative">
+                    <div class="location-row">
+                        <div class="location-dot pickup"></div>
+                        <div style="flex:1;position:relative">
+                            <input type="text" class="location-input" id="pickupInput"
+                                placeholder="🟢 Pickup location in Hyderabad" autocomplete="off"
+                                oninput="handleLocationInput(this,'pickup')" />
+                            <div class="suggestions" id="pickupSuggestions" style="display:none"></div>
+                        </div>
+                        <button onclick="useCurrentLocation()" class="btn btn-sm"
+                            style="background:var(--pink-50);color:var(--primary);white-space:nowrap;padding:8px"
+                            title="Use my current location">
+                            <i class="fa-solid fa-location-crosshairs"></i>
+                        </button>
+                    </div>
+                    <div class="location-row">
+                        <div class="location-dot drop"></div>
+                        <div style="flex:1;position:relative">
+                            <input type="text" class="location-input" id="dropInput"
+                                placeholder="🔴 Drop location in Hyderabad" autocomplete="off"
+                                oninput="handleLocationInput(this,'drop')" />
+                            <div class="suggestions" id="dropSuggestions" style="display:none"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vehicle Type Selector -->
+                <div style="margin-bottom:20px">
+                    <div style="font-size:0.85rem;font-weight:600;margin-bottom:10px;color:var(--gray-700)">Select
+                        Vehicle</div>
+                    <div class="vehicle-tabs">
+                        <div class="vehicle-tab active" id="tab-Cab" onclick="selectVehicle('Cab')">
+                            <div class="icon">🚕</div>
+                            <div class="name">Cab</div>
+                            <div class="fare" id="fare-Cab">₹--</div>
+                        </div>
+                        <div class="vehicle-tab" id="tab-Auto" onclick="selectVehicle('Auto')">
+                            <div class="icon">🛺</div>
+                            <div class="name">Auto</div>
+                            <div class="fare" id="fare-Auto">₹--</div>
+                        </div>
+                        <div class="vehicle-tab" id="tab-Bike" onclick="selectVehicle('Bike')">
+                            <div class="icon">🛵</div>
+                            <div class="name">Bike</div>
+                            <div class="fare" id="fare-Bike">₹--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fare Estimate Card -->
+                <div class="fare-card" id="fareCard">
+                    <div class="fare-details">
+                        <div>
+                            <div style="font-size:0.8rem;color:var(--gray-500);margin-bottom:2px">Estimated Fare</div>
+                            <div class="fare-amount" id="fareAmount">₹--</div>
+                        </div>
+                        <div style="text-align:right">
+                            <div style="font-size:0.8rem;color:var(--gray-500)">Distance</div>
+                            <div style="font-weight:700" id="fareDistance">-- km</div>
+                            <div style="font-size:0.75rem;color:var(--gray-500)" id="fareEta">ETA: -- min</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guardian Toggle -->
+                <div class="guardian-bar" id="guardianBar">
+                    <div>
+                        <div style="font-size:0.9rem;font-weight:600;color:var(--primary)"><i
+                                class="fa-solid fa-shield-halved"></i> Guardian Tracking</div>
+                        <div style="font-size:0.78rem;color:var(--gray-500)" id="guardianBarSub">Toggle to share live
+                            ride with family</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="guardianToggle" onchange="toggleGuardian(this.checked)" />
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <!-- Drivers Section -->
+                <div class="drivers-section" id="driversSection">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+                        <div style="font-size:0.85rem;font-weight:600;color:var(--gray-700)">Available Female Drivers
+                            <span class="badge badge-success badge-online" id="driverCount">0 online</span>
+                        </div>
+                        <button onclick="refreshDrivers()"
+                            style="background:none;color:var(--primary);font-size:0.8rem;font-weight:600"><i
+                                class="fa-solid fa-rotate"></i> Refresh</button>
+                    </div>
+                    <div class="drivers-list" id="driversList"></div>
+                </div>
+
+                <!-- Payment method -->
+                <div style="margin-bottom:20px;display:none" id="paymentSection">
+                    <div style="font-size:0.85rem;font-weight:600;margin-bottom:10px;color:var(--gray-700)">Payment
+                        Method</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="btn btn-sm btn-outline active" id="pay-cash" onclick="selectPayment('cash')">💵
+                            Cash</button>
+                        <button class="btn btn-sm btn-outline" id="pay-upi" onclick="selectPayment('upi')">📱
+                            UPI</button>
+                        <button class="btn btn-sm btn-outline" id="pay-card" onclick="selectPayment('card')">💳
+                            Card</button>
+                        <button class="btn btn-sm btn-outline" id="pay-wallet" onclick="selectPayment('wallet')">👛
+                            Wallet</button>
+                    </div>
+                </div>
+
+                <!-- Book Button -->
+                <button class="btn btn-primary btn-lg" style="width:100%;margin-top:8px" id="bookBtn"
+                    onclick="confirmBooking()" disabled>
+                    <i class="fa-solid fa-shield-halved"></i> Confirm Booking
+                </button>
+                <div style="text-align:center;margin-top:8px;font-size:0.75rem;color:var(--gray-500)">
+                    🛡️ Ride protected by SafeHer Shield – SOS + Live Tracking included
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Panel -->
+        <div class="map-panel" style="position:relative">
+            <div id="bookingMap" style="width:100%;height:100%;min-height:400px;background:var(--gray-100);z-index:1;">
+            </div>
+
+            <!-- Map Decorative Overlays -->
+            <div
+                style="position:absolute;bottom:24px;left:0;right:0;display:flex;justify-content:center;gap:20px;z-index:1000;pointer-events:none">
+                <div
+                    style="background:rgba(255,255,255,0.9);backdrop-filter:blur(8px);padding:12px 20px;border-radius:16px;box-shadow:var(--shadow-lg);text-align:center;pointer-events:auto;border:1px solid rgba(233,30,140,0.1)">
+                    <div style="font-size:1.5rem">🚕</div>
+                    <div style="font-size:0.75rem;margin-top:2px;font-weight:700">Cabs</div>
+                </div>
+                <div
+                    style="background:rgba(255,255,255,0.9);backdrop-filter:blur(8px);padding:12px 20px;border-radius:16px;box-shadow:var(--shadow-lg);text-align:center;pointer-events:auto;border:1px solid rgba(233,30,140,0.1)">
+                    <div style="font-size:1.5rem">🛺</div>
+                    <div style="font-size:0.75rem;margin-top:2px;font-weight:700">Autos</div>
+                </div>
+                <div
+                    style="background:rgba(255,255,255,0.9);backdrop-filter:blur(8px);padding:12px 20px;border-radius:16px;box-shadow:var(--shadow-lg);text-align:center;pointer-events:auto;border:1px solid rgba(233,30,140,0.1)">
+                    <div style="font-size:1.5rem">🛵</div>
+                    <div style="font-size:0.75rem;margin-top:2px;font-weight:700">Bikes</div>
+                </div>
+            </div>
+            <div style="position:absolute;top:24px;right:24px;z-index:1000;display:flex;gap:8px" id="mapPills">
+                <div
+                    style="background:white;padding:6px 12px;border-radius:20px;font-size:0.8rem;box-shadow:var(--shadow-md);font-weight:600">
+                    📍 Hyderabad Map</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Confirmation Modal -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>🌸 Confirm Your Ride</h3>
+                <button class="modal-close" onclick="closeModal('confirmModal')">✕</button>
+            </div>
+            <div id="confirmDetails"></div>
+            <div style="display:flex;gap:12px;margin-top:24px">
+                <button class="btn btn-outline" style="flex:1" onclick="closeModal('confirmModal')">Cancel</button>
+                <button class="btn btn-primary" style="flex:2" onclick="finalizeBooking()" id="finalizeBtn">
+                    <i class="fa-solid fa-check"></i> Confirm & Book
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/booking.js"></script>
+    <script>
+        // Bridge function: called by oninput on location fields
+        // Delegates to app.js autocomplete + booking.js location change
+        function handleLocationInput(inputEl, type) {
+            const val = inputEl.value.trim();
+            const suggId = type === 'pickup' ? 'pickupSuggestions' : 'dropSuggestions';
+            const suggEl = document.getElementById(suggId);
+            if (suggEl) {
+                if (val.length < 2) { suggEl.style.display = 'none'; return; }
+                // Use the global autocomplete renderer from app.js
+                if (typeof autocomplete === 'function') {
+                    // autocomplete is initialized via DOMContentLoaded, just trigger suggestion display
+                    const cached = window._autocompleteCacheRef && window._autocompleteCacheRef[val];
+                    if (cached) {
+                        renderSuggestions(cached, suggEl, inputEl.id);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

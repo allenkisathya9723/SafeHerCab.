@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Guardian Tracking – SafeHer Ride</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0a0a, #1a0a12);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .guardian-page {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 32px 20px;
+        }
+
+        .guardian-header {
+            text-align: center;
+            padding: 32px 0;
+        }
+
+        .guardian-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            margin-bottom: 16px;
+            backdrop-filter: blur(20px);
+        }
+
+        .guardian-card h3 {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .rider-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .rider-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            border: 2px solid rgba(233, 30, 140, 0.5);
+        }
+
+        .map-placeholder {
+            height: 200px;
+            background: linear-gradient(135deg, #1a2a1a, #1a1a2a);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 10px;
+            margin: 12px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tracking-off-msg {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .pulse-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 1.5s infinite;
+            display: inline-block;
+            margin-right: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="guardian-page">
+        <div class="guardian-header">
+            <div style="font-size:3rem;margin-bottom:8px">🌸</div>
+            <h1 style="font-size:1.5rem;margin-bottom:6px">Guardian Tracking</h1>
+            <p style="color:rgba(255,255,255,0.5);font-size:0.9rem">SafeHer Ride – Real-time Safety Monitor</p>
+        </div>
+
+        <!-- Tracking Status -->
+        <div class="guardian-card" id="trackingEnabled" style="display:none">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+                <span class="pulse-dot"></span>
+                <span style="font-size:0.9rem;font-weight:600;color:var(--success)">LIVE TRACKING ACTIVE</span>
+            </div>
+            <h3>Rider Information</h3>
+            <div class="rider-info">
+                <div class="rider-avatar">👩</div>
+                <div>
+                    <div style="font-size:1rem;font-weight:700" id="guardianRiderName">--</div>
+                    <div style="font-size:0.82rem;color:rgba(255,255,255,0.5)" id="guardianRiderPhone">--</div>
+                    <div style="margin-top:4px"><span class="badge badge-success">On Ride</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="guardian-card" id="driverInfoCard" style="display:none">
+            <h3>Driver Information</h3>
+            <div style="display:flex;align-items:center;gap:14px">
+                <img id="guardianDriverPhoto" src="" alt="Driver"
+                    style="width:48px;height:48px;border-radius:50%;border:2px solid var(--primary)" />
+                <div style="flex:1">
+                    <div id="guardianDriverName" style="font-weight:700">--</div>
+                    <div style="font-size:0.82rem;color:rgba(255,255,255,0.5)" id="guardianVehicle">--</div>
+                    <span class="badge badge-primary" id="guardianVehicleType">--</span>
+                </div>
+                <div style="font-size:1.5rem" id="guardianRating">⭐</div>
+            </div>
+        </div>
+
+        <div class="guardian-card">
+            <h3>Live Location</h3>
+            <div id="guardianMap"
+                style="height:200px;background:linear-gradient(135deg,#1a2a1a,#1a1a2a);border-radius:var(--radius-md);margin:12px 0;">
+            </div>
+            <div
+                style="display:flex;justify-content:space-between;font-size:0.82rem;color:rgba(255,255,255,0.5);margin-top:8px">
+                <span>Pickup: <strong id="guardianPickup" style="color:white">--</strong></span>
+                <span>Drop: <strong id="guardianDrop" style="color:white">--</strong></span>
+            </div>
+            <button onclick="openMapsLink()" class="btn btn-primary btn-sm" style="width:100%;margin-top:8px">
+                <i class="fa-solid fa-map-location-dot"></i> Open externally in Maps
+            </button>
+        </div>
+
+        <div class="guardian-card">
+            <h3>Ride Status</h3>
+            <div id="guardianStatus" style="font-size:1rem;font-weight:600">Loading...</div>
+            <div style="margin-top:12px;display:flex;gap:10px">
+                <a href="tel:100" class="btn btn-danger btn-sm" style="flex:1"><i class="fa-solid fa-phone"></i> Police:
+                    100</a>
+                <a href="tel:112" class="btn btn-sm"
+                    style="flex:1;background:rgba(239,68,68,0.15);color:var(--danger);border:1px solid rgba(239,68,68,0.3)">112
+                    Emergency</a>
+            </div>
+        </div>
+
+        <div class="tracking-off-msg" id="trackingOff">
+            <div style="font-size:3rem;margin-bottom:12px">🔒</div>
+            <h3>Tracking Link Not Active</h3>
+            <p style="color:rgba(255,255,255,0.5);font-size:0.88rem;margin-top:8px">This tracking link hasn't been
+                activated, or the ride has ended.</p>
+            <p style="color:rgba(255,255,255,0.3);font-size:0.8rem;margin-top:16px">If you believe this is an error,
+                contact the rider.</p>
+        </div>
+
+        <div
+            style="text-align:center;margin-top:24px;padding:16px;background:rgba(233,30,140,0.05);border-radius:var(--radius-md);border:1px solid rgba(233,30,140,0.2)">
+            <div style="font-size:0.8rem;color:rgba(255,255,255,0.5)">Powered by <strong
+                    style="color:var(--primary)">SafeHer Ride</strong> · Hyderabad's Women-Only Cab Service</div>
+            <div style="font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:4px">"Your Safety, Our Responsibility."
+                🌸</div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://cdn.socket.io/4.6.2/socket.io.min.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/map.js"></script>
+    <script>
+        const params = new URLSearchParams(location.search);
+        const bookingId = params.get('bookingId');
+        const token = params.get('token');
+
+        if (bookingId && token) {
+            document.getElementById('trackingOff').style.display = 'none';
+            document.getElementById('trackingEnabled').style.display = 'block';
+            document.getElementById('driverInfoCard').style.display = 'block';
+
+            // Load booking data
+            const booking = JSON.parse(localStorage.getItem('active_booking') || '{}');
+            if (booking.driver) {
+                document.getElementById('guardianDriverName').textContent = booking.driver.name || '--';
+                document.getElementById('guardianVehicle').textContent = `${booking.driver.vehicleModel || ''} · ${booking.driver.vehicleNumber || ''}`;
+                document.getElementById('guardianVehicleType').textContent = booking.driver.vehicleType || '--';
+                document.getElementById('guardianDriverPhoto').src = booking.driver.photo || '';
+                document.getElementById('guardianRating').textContent = `⭐ ${booking.driver.rating || '4.8'}`;
+            }
+            if (booking.pickup) {
+                document.getElementById('guardianPickup').textContent = booking.pickup.address || '--';
+                document.getElementById('guardianDrop').textContent = booking.drop?.address || '--';
+            }
+            document.getElementById('guardianRiderName').textContent = booking.userName || 'SafeHer User';
+            document.getElementById('guardianRiderPhone').textContent = booking.userPhone || '';
+            document.getElementById('guardianStatus').innerHTML = '<span class="badge badge-success badge-online">🟢 On Ride – Live Tracking Active</span>';
+
+            // Socket
+            try {
+                // Initialize Map First
+                if (booking.pickup && booking.drop) {
+                    SafeHerMap.init('guardianMap', { darkMode: true });
+                    SafeHerMap.setPickup(booking.pickup.lat, booking.pickup.lng, booking.pickup.address);
+                    SafeHerMap.setDrop(booking.drop.lat, booking.drop.lng, booking.drop.address);
+                    SafeHerMap.drawRoute();
+                }
+
+                const socket = io();
+                socket.emit('guardianJoin', { bookingId });
+                socket.on('locationUpdate', (data) => {
+                    if (data.lat && data.lng) {
+                        SafeHerMap.updateDriverPosition(data.lat, data.lng);
+                    }
+                });
+                socket.on('sosAlert', () => {
+                    document.getElementById('guardianStatus').innerHTML = '<span class="badge badge-danger" style="animation:flash 0.5s step-end infinite">🚨 SOS TRIGGERED! Call rider NOW!</span>';
+                });
+            } catch (e) { }
+        } else {
+            document.getElementById('trackingOff').style.display = 'block';
+        }
+
+        function openMapsLink() {
+            const booking = JSON.parse(localStorage.getItem('active_booking') || '{}');
+            const lat = booking.pickup?.lat || 17.3850;
+            const lng = booking.pickup?.lng || 78.4867;
+            window.open(`https://maps.google.com/?q=${lat},${lng}`, '_blank');
+        }
+    </script>
+</body>
+
+</html>

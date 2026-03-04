@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Tracking – SafeHer Ride</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <style>
+        body {
+            background: var(--black);
+            overflow: hidden;
+        }
+
+        .tracking-layout {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            height: 100vh;
+        }
+
+        .tracking-panel {
+            background: white;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tracking-header {
+            background: linear-gradient(135deg, var(--black), var(--dark));
+            padding: 20px;
+            flex-shrink: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tracking-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 0% 100%, rgba(233, 30, 140, 0.3) 0%, transparent 60%);
+        }
+
+        .tracking-header>* {
+            position: relative;
+            z-index: 1;
+        }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .live-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 1.5s infinite;
+        }
+
+        .tracking-body {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .map-panel {
+            position: relative;
+        }
+
+        #trackingMap {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #e8f5e9, #e3f2fd);
+        }
+
+        /* SOS floating */
+        .sos-float {
+            position: absolute;
+            bottom: 100px;
+            right: 24px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sos-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #ef4444;
+            text-align: center;
+        }
+
+        /* Status pill */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-arriving {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .status-ontrip {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-completed {
+            background: var(--pink-100);
+            color: var(--primary);
+        }
+
+        /* Action row */
+        .action-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .action-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 14px 10px;
+            background: var(--gray-100);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition-fast);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            border: none;
+        }
+
+        .action-btn:hover {
+            background: var(--pink-50);
+            color: var(--primary);
+        }
+
+        .action-btn i {
+            font-size: 1.2rem;
+        }
+
+        /* Safety alerts */
+        .safety-alert {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            animation: fadeInDown 0.3s ease;
+        }
+
+        .safety-alert.danger {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            body {
+                overflow: auto;
+            }
+
+            .tracking-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .map-panel {
+                height: 320px;
+                order: -1;
+                position: relative;
+            }
+
+            .tracking-panel {
+                height: auto;
+            }
+
+            .sos-float {
+                bottom: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="tracking-layout">
+        <!-- Tracking Panel -->
+        <div class="tracking-panel">
+            <div class="tracking-header">
+                <div class="live-badge">LIVE TRACKING</div>
+                <h2 style="color:white;font-size:1.2rem;margin-bottom:6px" id="rideStatusText">Driver Arriving...</h2>
+                <div style="color:rgba(255,255,255,0.6);font-size:0.85rem" id="etaText">ETA: calculating...</div>
+                <div style="display:flex;gap:8px;margin-top:12px">
+                    <div class="status-pill status-arriving" id="statusPill">🔶 Arriving</div>
+                    <a href="booking.html"
+                        style="padding:8px 14px;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);border-radius:var(--radius-full);font-size:0.75rem">✕
+                        Cancel</a>
+                </div>
+            </div>
+            <div class="tracking-body">
+
+                <!-- Driver Card -->
+                <div style="margin-bottom:20px">
+                    <div
+                        style="font-size:0.8rem;font-weight:600;color:var(--gray-500);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">
+                        Your Driver</div>
+                    <div class="driver-card selected" id="trackingDriverCard">
+                        <img class="driver-avatar" id="trackingDriverPhoto"
+                            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Driver&backgroundColor=e91e8c"
+                            alt="Driver" />
+                        <div class="driver-info">
+                            <div class="driver-name" id="trackingDriverName">Loading...</div>
+                            <div class="driver-meta">
+                                <span class="driver-rating">⭐ <span id="trackingDriverRating">--</span></span>
+                                <span class="driver-vehicle" id="trackingVehicleNumber">--</span>
+                                <span class="badge badge-success" id="trackingVehicleType">--</span>
+                            </div>
+                            <div
+                                style="margin-top:8px; font-weight:700; color:var(--primary); font-size:0.85rem; display:flex; align-items:center; gap:8px;">
+                                Ride OTP: <span id="trackingOTP"
+                                    style="letter-spacing:3px; font-size:1.1rem; background:var(--pink-100); padding:2px 8px; border-radius:6px; color:var(--pink-700)">----</span>
+                            </div>
+                        </div>
+                        <a href="tel:+91" id="callDriverBtn" class="btn btn-primary btn-icon btn-sm"
+                            title="Call Driver">
+                            <i class="fa-solid fa-phone"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Route Info -->
+                <div style="margin-bottom:20px">
+                    <div
+                        style="font-size:0.8rem;font-weight:600;color:var(--gray-500);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">
+                        Journey</div>
+                    <div
+                        style="background:var(--gray-100);border-radius:var(--radius-md);padding:12px;display:flex;flex-direction:column;gap:8px">
+                        <div style="display:flex;gap:10px;align-items:flex-start">
+                            <div
+                                style="width:10px;height:10px;border-radius:50%;background:var(--success);flex-shrink:0;margin-top:4px">
+                            </div>
+                            <div style="font-size:0.88rem" id="trackingPickup">-</div>
+                        </div>
+                        <div style="border-left:2px dashed var(--gray-300);margin-left:4px;height:12px"></div>
+                        <div style="display:flex;gap:10px;align-items:flex-start">
+                            <div
+                                style="width:10px;height:10px;border-radius:50%;background:var(--primary);flex-shrink:0;margin-top:4px">
+                            </div>
+                            <div style="font-size:0.88rem" id="trackingDrop">-</div>
+                        </div>
+                    </div>
+                    <div
+                        style="display:flex;justify-content:space-between;margin-top:8px;font-size:0.82rem;color:var(--gray-500)">
+                        <span>Distance: <strong id="trackingDistance" style="color:var(--black)">--</strong></span>
+                        <span>Fare: <strong id="trackingFare" style="color:var(--primary)">--</strong></span>
+                    </div>
+                </div>
+
+                <!-- Ride Status Timeline -->
+                <div style="margin-bottom:20px">
+                    <div
+                        style="font-size:0.8rem;font-weight:600;color:var(--gray-500);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">
+                        Ride Status</div>
+                    <div class="ride-timeline">
+                        <div class="timeline-item done" id="tl-booked">
+                            <div class="timeline-dot">✓</div>
+                            <div class="timeline-label"><strong>Ride Booked</strong><span>Booking confirmed</span></div>
+                        </div>
+                        <div class="timeline-item active" id="tl-arriving">
+                            <div class="timeline-dot"><i class="fa-solid fa-car"></i></div>
+                            <div class="timeline-label"><strong>Driver Arriving</strong><span id="tl-arriving-time">On
+                                    the way to pickup</span></div>
+                        </div>
+                        <div class="timeline-item pending" id="tl-trip">
+                            <div class="timeline-dot">3</div>
+                            <div class="timeline-label"><strong>On Trip</strong><span>Ride in progress</span></div>
+                        </div>
+                        <div class="timeline-item pending" id="tl-done">
+                            <div class="timeline-dot">✓</div>
+                            <div class="timeline-label"><strong>Completed</strong><span>Arrived safely 🌸</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Safety Alerts -->
+                <div id="safetyAlerts"></div>
+
+                <!-- Action Buttons -->
+                <div class="action-row">
+                    <button class="action-btn" onclick="shareRideLink()">
+                        <i class="fa-solid fa-share-nodes" style="color:var(--info)"></i>
+                        Share Ride
+                    </button>
+                    <button class="action-btn" onclick="toggleGuardianSharing()">
+                        <i class="fa-solid fa-eye" style="color:var(--primary)" id="guardianEyeIcon"></i>
+                        <span id="guardianBtnText">Guardian</span>
+                    </button>
+                    <button class="action-btn" onclick="triggerSOS()">
+                        <i class="fa-solid fa-shield-halved" style="color:var(--warning)"></i>
+                        Safety
+                    </button>
+                    <button class="action-btn" onclick="callPolice()">
+                        <i class="fa-solid fa-phone" style="color:var(--danger)"></i>
+                        Police
+                    </button>
+                </div>
+
+                <!-- Predictive Safety Panel -->
+                <div
+                    style="margin-top:16px;background:var(--pink-50);border:1px solid var(--pink-200);border-radius:var(--radius-md);padding:14px">
+                    <div style="font-size:0.8rem;font-weight:700;color:var(--primary);margin-bottom:10px">🤖 SafeHer AI
+                        Monitor</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                        <div style="background:white;border-radius:8px;padding:8px;text-align:center">
+                            <div style="font-size:0.7rem;color:var(--gray-400);font-weight:600;margin-bottom:4px">SPEED
+                            </div>
+                            <div style="font-size:0.85rem;font-weight:700;color:var(--success)" id="aiSpeed">Normal
+                            </div>
+                        </div>
+                        <div style="background:white;border-radius:8px;padding:8px;text-align:center">
+                            <div style="font-size:0.7rem;color:var(--gray-400);font-weight:600;margin-bottom:4px">ROUTE
+                            </div>
+                            <div style="font-size:0.85rem;font-weight:700;color:var(--success)" id="aiRoute">On Track ✅
+                            </div>
+                        </div>
+                        <div style="background:white;border-radius:8px;padding:8px;text-align:center">
+                            <div style="font-size:0.7rem;color:var(--gray-400);font-weight:600;margin-bottom:4px">STATUS
+                            </div>
+                            <div style="font-size:0.85rem;font-weight:700;color:var(--info)" id="aiStatus">Moving</div>
+                        </div>
+                        <div style="background:white;border-radius:8px;padding:8px;text-align:center">
+                            <div style="font-size:0.7rem;color:var(--gray-400);font-weight:600;margin-bottom:4px">SAFETY
+                            </div>
+                            <div style="font-size:0.85rem;font-weight:700;color:var(--success)" id="aiSafety">Safe 🛡️
+                            </div>
+                        </div>
+                    </div>
+                    <div style="font-size:0.73rem;color:var(--gray-500);margin-top:8px" id="safetyStatus">AI monitoring
+                        route, speed & surroundings...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map -->
+        <div class="map-panel" style="position:relative">
+            <div id="trackingMap" style="width:100%;height:100%;background:var(--gray-100);z-index:1;"></div>
+
+            <!-- Floating Driver Info Overlay -->
+            <div
+                style="position:absolute;top:20px;left:50%;transform:translateX(-50%);z-index:1000;background:white;padding:12px 20px;border-radius:var(--radius-lg);box-shadow:0 4px 16px rgba(0,0,0,0.1);display:flex;align-items:center;gap:12px;min-width:280px">
+                <div style="font-size:1.5rem;animation:float 2s ease-in-out infinite">🚕</div>
+                <div>
+                    <div style="font-size:0.85rem;font-weight:700" id="driverFloatingStatus">Driver moving to you</div>
+                    <div style="font-size:0.75rem;color:var(--gray-500)" id="demoDriverInfo">-</div>
+                </div>
+            </div>
+
+            <!-- SOS Floating Button -->
+            <div class="sos-float"
+                style="position:absolute; bottom:30px; right:30px; z-index:1000; display:flex; flex-direction:column; align-items:center; gap:8px;">
+                <button class="sos-btn" id="sosBtn" onclick="triggerSOS()">
+                    🆘<span style="font-size:0.65rem">SOS</span>
+                </button>
+                <div class="sos-label"
+                    style="font-size:0.75rem; font-weight:700; color:#ef4444; background:white; padding:4px 8px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.15)">
+                    Emergency</div>
+            </div>
+        </div>
+
+        <!-- SOS Countdown Modal -->
+        <div class="modal-overlay" id="sosCountdownModal" style="z-index:9999">
+            <div class="modal" style="border-top:4px solid var(--danger);text-align:center;max-width:320px">
+                <div style="font-size:2.5rem;margin-bottom:8px;animation:pulse 0.5s ease infinite">🚨</div>
+                <h2 style="color:var(--danger);margin-bottom:4px">SOS Activating...</h2>
+                <p style="color:var(--gray-500);font-size:0.85rem;margin-bottom:20px">Tap CANCEL if this was a mistake
+                </p>
+                <!-- Countdown Ring -->
+                <div style="position:relative;width:100px;height:100px;margin:0 auto 20px">
+                    <svg width="100" height="100" style="transform:rotate(-90deg)">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="#fee2e2" stroke-width="8" />
+                        <circle id="sosCountCircle" cx="50" cy="50" r="45" fill="none" stroke="#ef4444" stroke-width="8"
+                            stroke-dasharray="283" stroke-dashoffset="0"
+                            style="transition:stroke-dashoffset 1s linear" />
+                    </svg>
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2.5rem;font-weight:900;color:var(--danger)"
+                        id="sosCountText">5</div>
+                </div>
+                <button onclick="cancelSOS()" class="btn btn-outline"
+                    style="width:100%;border-color:var(--danger);color:var(--danger);font-size:1rem;padding:14px">
+                    ✕ CANCEL SOS
+                </button>
+            </div>
+        </div>
+
+        <!-- SOS Modal -->
+
+        <div class="modal-overlay" id="sosModal">
+            <div class="modal" style="border-top:4px solid var(--danger)">
+                <div style="text-align:center;margin-bottom:20px">
+                    <div style="font-size:3rem;margin-bottom:10px">🚨</div>
+                    <h2 style="color:var(--danger)">Emergency SOS Triggered!</h2>
+                    <p style="color:var(--gray-600);font-size:0.9rem;margin-top:8px">Alerts are being sent to your
+                        guardian
+                        and nearest police station</p>
+                </div>
+                <div id="sosDetails"></div>
+                <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px">
+                    <a id="callPoliceBtn" href="tel:100" class="btn btn-danger btn-lg">
+                        <i class="fa-solid fa-phone"></i> Call Police: 100
+                    </a>
+                    <a href="tel:112" class="btn btn-outline" style="border-color:var(--danger);color:var(--danger)">
+                        <i class="fa-solid fa-ambulance"></i> Emergency: 112
+                    </a>
+                    <a href="tel:1091" class="btn btn-outline">
+                        <i class="fa-solid fa-female"></i> Women Helpline: 1091
+                    </a>
+                    <button class="btn btn-dark" onclick="closeModal('sosModal');showSafePrompt()">I'm Safe Now</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Safe Check Prompt -->
+        <div class="modal-overlay" id="safeModal">
+            <div class="modal" style="text-align:center">
+                <div style="font-size:3rem;margin-bottom:12px">🌸</div>
+                <h2 style="margin-bottom:8px">Are You Safe?</h2>
+                <p style="color:var(--gray-500);font-size:0.9rem;margin-bottom:24px" id="safePromptMsg">We detected an
+                    unusual stop. Please confirm you're okay.</p>
+                <div style="display:flex;gap:10px">
+                    <button class="btn btn-danger" style="flex:1" onclick="closeModal('safeModal');triggerSOS()">🚨 Need
+                        Help!</button>
+                    <button class="btn btn-primary" style="flex:1" onclick="closeModal('safeModal');reportSafe()">✅ I'm
+                        Safe</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Ride Modal -->
+        <div class="modal-overlay" id="shareModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>🔗 Share Ride</h3>
+                    <button class="modal-close" onclick="closeModal('shareModal')">✕</button>
+                </div>
+                <p style="color:var(--gray-500);font-size:0.9rem;margin-bottom:20px">Share this link for live tracking:
+                </p>
+                <div style="background:var(--gray-100);border-radius:var(--radius-md);padding:12px;word-break:break-all;font-size:0.85rem;margin-bottom:16px"
+                    id="shareLink">-</div>
+                <div style="display:flex;gap:10px">
+                    <button class="btn btn-primary" style="flex:1" onclick="copyShareLink()"><i
+                            class="fa-solid fa-copy"></i> Copy Link</button>
+                    <a id="whatsappShare" href="#" class="btn btn-outline"
+                        style="flex:1;color:#25D366;border-color:#25D366"><i class="fa-brands fa-whatsapp"></i>
+                        WhatsApp</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- OTP Validation Modal -->
+        <div class="modal-overlay" id="otpModal">
+            <div class="modal" style="text-align:center">
+                <div style="font-size:3rem;margin-bottom:12px">🚕</div>
+                <h2 style="margin-bottom:8px">Driver Arrived!</h2>
+                <p style="color:var(--gray-500);font-size:0.95rem;margin-bottom:24px">Your driver has reached the pickup
+                    location. Provide the OTP <strong><span id="modalOTPDisplay"
+                            style="color:var(--primary)">----</span></strong> to start the ride.</p>
+                <button class="btn btn-primary btn-lg" style="width:100%" onclick="simulateDriverStartsRide()">✅
+                    Simulate Driver Entering OTP</button>
+            </div>
+        </div>
+
+        <audio id="rideStartBeep" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg"
+            preload="auto"></audio>
+
+        <div class="toast-container" id="toastContainer"></div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+        <script src="https://cdn.socket.io/4.6.2/socket.io.min.js"></script>
+        <script src="js/app.js"></script>
+        <script src="js/map.js"></script>
+        <script src="js/safety.js"></script>
+        <script src="js/guardian.js"></script>
+        <script>
+            // ── Web Audio Synth for Alerts ──
+            function playSound(type) {
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioContext) return;
+                    const ctx = new AudioContext();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+
+                    if (type === 'start') {
+                        // Forward ascending chime (approx 2s)
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(440, ctx.currentTime); // A4
+                        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.3); // E5
+                        gain.gain.setValueAtTime(0, ctx.currentTime);
+                        gain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + 0.1);
+                        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 2.5);
+                        osc.start(ctx.currentTime);
+                        osc.stop(ctx.currentTime + 2.5);
+                    } else if (type === 'end') {
+                        // Finishing pleasant chime
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+                        osc.frequency.setValueAtTime(440, ctx.currentTime + 0.2); // A4
+                        gain.gain.setValueAtTime(0, ctx.currentTime);
+                        gain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.1);
+                        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 2.0);
+                        osc.start(ctx.currentTime);
+                        osc.stop(ctx.currentTime + 2.0);
+                    }
+                } catch (e) { console.log('Audio disabled', e); }
+            }
+
+            // ── Init tracking page ──
+            const bookingId = new URLSearchParams(location.search).get('bookingId') || localStorage.getItem('active_booking_id');
+            const user = JSON.parse(localStorage.getItem('safehercab_user') || '{}');
+            const booking = JSON.parse(localStorage.getItem('active_booking') || '{}');
+
+            // Fill booking details
+            if (booking.pickup) {
+                document.getElementById('trackingPickup').textContent = booking.pickup.address || 'Pickup';
+                document.getElementById('trackingDrop').textContent = booking.drop?.address || 'Drop';
+                document.getElementById('trackingDistance').textContent = (booking.distance || '--') + ' km';
+                document.getElementById('trackingFare').textContent = '₹' + (booking.estimatedFare || '--');
+            }
+            if (booking.driver) {
+                const d = booking.driver;
+                document.getElementById('trackingDriverName').textContent = d.name || 'Driver';
+                document.getElementById('trackingDriverRating').textContent = d.rating || '4.8';
+                document.getElementById('trackingVehicleNumber').textContent = d.vehicleNumber || '--';
+                document.getElementById('trackingVehicleType').textContent = d.vehicleType || '--';
+                document.getElementById('trackingDriverPhoto').src = d.photo || '';
+                document.getElementById('callDriverBtn').href = `tel:+91${d.phone}`;
+                document.getElementById('etaText').textContent = `ETA: ${d.eta || 3} minutes`;
+                document.getElementById('demoDriverInfo').textContent = `${d.name} in ${d.vehicleModel || d.vehicleType} • ${d.vehicleNumber}`;
+            }
+            if (booking.otp) {
+                document.getElementById('trackingOTP').textContent = booking.otp;
+                document.getElementById('modalOTPDisplay').textContent = booking.otp;
+            }
+
+            // ── Map Init ──
+            if (booking.pickup && booking.drop) {
+                SafeHerMap.init('trackingMap');
+                SafeHerMap.setPickup(booking.pickup.lat, booking.pickup.lng, booking.pickup.address);
+                SafeHerMap.setDrop(booking.drop.lat, booking.drop.lng, booking.drop.address);
+
+                (async () => {
+                    await SafeHerMap.drawRoute();
+                    // Show initial driver marker so car is visible immediately
+                    if (booking.driver && booking.driver.location) {
+                        SafeHerMap.setDriver(booking.driver.location.lat, booking.driver.location.lng, booking.driver.name, booking.driver.vehicleType);
+                    }
+
+                    // Safely start the simulation only after map initialization and route download is complete
+                    setTimeout(() => {
+                        simulateDriverMovement();
+                    }, 2000);
+                })();
+            }
+
+            // ── Socket.io connection ──
+            let socket;
+            try {
+                socket = io();
+                if (bookingId) {
+                    socket.emit('riderJoin', { bookingId });
+                    socket.on('locationUpdate', (data) => {
+                        document.getElementById('etaText').textContent = `Driver moving • Live tracking active`;
+                        document.getElementById('safetyStatus').textContent = `Speed: ${data.speed || '~25'} km/h • Last update: just now`;
+                        // Update driver car on actual map
+                        if (data.lat && data.lng) {
+                            if (booking.driver) {
+                                SafeHerMap.setDriver(data.lat, data.lng, booking.driver.name, booking.driver.vehicleType);
+                            } else {
+                                SafeHerMap.updateDriverPosition(data.lat, data.lng);
+                            }
+                        }
+                    });
+                    socket.on('driverDisconnected', () => {
+                        showSafetyAlert('⚠️ Driver signal lost for 60s. Stay alert!', 'danger');
+                        showSafePrompt('Driver signal was lost. Are you safe?');
+                    });
+                    socket.on('sosAlert', (data) => {
+                        showSafetyAlert('🚨 SOS Alert Triggered!', 'danger');
+                    });
+                }
+            } catch (e) { console.log('Socket not available, running in demo mode'); }
+
+            // ── SOS Countdown ──
+            let sosTriggered = false;
+            let sosCountdownTimer = null;
+
+            function triggerSOS() {
+                if (sosTriggered) { showToast('SOS cooldown active. Please wait.', 'warning'); return; }
+                // Show countdown modal
+                openModal('sosCountdownModal');
+                let count = 5;
+                document.getElementById('sosCountText').textContent = count;
+                document.getElementById('sosCountCircle').style.strokeDashoffset = '0';
+
+                sosCountdownTimer = setInterval(() => {
+                    count--;
+                    document.getElementById('sosCountText').textContent = count;
+                    // Shrink circle
+                    const offset = ((5 - count) / 5) * 283;
+                    document.getElementById('sosCountCircle').style.strokeDashoffset = offset;
+                    if (count <= 0) {
+                        clearInterval(sosCountdownTimer);
+                        closeModal('sosCountdownModal');
+                        activateSOS();
+                    }
+                }, 1000);
+            }
+
+            function cancelSOS() {
+                clearInterval(sosCountdownTimer);
+                closeModal('sosCountdownModal');
+                showToast('SOS cancelled. Stay safe! 🌸', 'info');
+            }
+
+            async function activateSOS() {
+                sosTriggered = true;
+                // Flash screen red
+                document.body.style.transition = 'background 0.3s';
+                document.body.style.background = 'rgba(239,68,68,0.15)';
+                setTimeout(() => document.body.style.background = '', 1000);
+
+                // Play alarm
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    const ctx = new AudioContext();
+                    for (let i = 0; i < 3; i++) {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain); gain.connect(ctx.destination);
+                        osc.type = 'square';
+                        osc.frequency.value = 880;
+                        gain.gain.setValueAtTime(0.4, ctx.currentTime + i * 0.4);
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.4 + 0.35);
+                        osc.start(ctx.currentTime + i * 0.4);
+                        osc.stop(ctx.currentTime + i * 0.4 + 0.35);
+                    }
+                } catch (e) { }
+
+                try {
+                    navigator.geolocation.getCurrentPosition(async (pos) => {
+                        const { latitude: lat, longitude: lng } = pos.coords;
+                        const res = await API.post('/emergency/sos', {
+                            bookingId,
+                            userId: user.id,
+                            userName: user.name || 'SafeHer User',
+                            userPhone: user.phone,
+                            driverName: booking.driver?.name || 'Unknown',
+                            vehicleNumber: booking.driver?.vehicleNumber || 'Unknown',
+                            lat, lng,
+                            guardianPhone: localStorage.getItem('guardian_phone') || ''
+                        });
+                        const ps = res.nearestPoliceStation;
+                        document.getElementById('sosDetails').innerHTML = `
+              <div style="background:var(--gray-100);border-radius:var(--radius-md);padding:14px;margin-bottom:12px">
+                <div style="font-size:0.8rem;color:var(--gray-500);margin-bottom:6px">NEAREST POLICE STATION</div>
+                <div style="font-weight:700">${ps?.name || 'Nearest PS'}</div>
+                <div style="font-size:0.82rem;color:var(--gray-500)">${ps?.address || ''}</div>
+                <div style="font-size:0.82rem;margin-top:6px"><strong>${ps?.distance || '--'} km away</strong></div>
+              </div>
+              <div class="badge badge-success" style="margin-bottom:4px">✅ Guardian Alert Sent</div><br>
+              <div class="badge badge-danger">🚨 Police Station Alerted</div>
+            `;
+                        openModal('sosModal');
+                        if (socket) socket.emit('triggerSOS', { bookingId, lat, lng });
+                        setTimeout(() => { sosTriggered = false; }, 30000);
+                    }, () => {
+                        openModal('sosModal');
+                        setTimeout(() => { sosTriggered = false; }, 30000);
+                    });
+                } catch (e) {
+                    openModal('sosModal');
+                    setTimeout(() => { sosTriggered = false; }, 30000);
+                }
+            }
+
+            function showSafetyAlert(msg, type = 'warning') {
+                const div = document.createElement('div');
+                div.className = `safety-alert ${type === 'danger' ? 'danger' : ''}`;
+                div.innerHTML = `<div style="font-size:1.2rem">${type === 'danger' ? '🚨' : '⚠️'}</div><div style="font-size:0.85rem">${msg}</div>`;
+                document.getElementById('safetyAlerts').prepend(div);
+            }
+
+            function showSafePrompt(msg = 'We noticed something unusual. Are you okay?') {
+                document.getElementById('safePromptMsg').textContent = msg;
+                openModal('safeModal');
+            }
+
+            function reportSafe() {
+                showToast('Glad you are safe! 🌸 Ride monitoring continues.', 'success');
+                document.getElementById('safetyStatus').textContent = '✅ User confirmed safe. Monitoring continues...';
+            }
+
+            function callPolice() { window.open('tel:100'); }
+
+            function shareRideLink() {
+                const link = `${location.origin}/guardian.html?bookingId=${bookingId}&token=${booking.guardianToken || 'demo'}`;
+                document.getElementById('shareLink').textContent = link;
+                document.getElementById('whatsappShare').href = `https://wa.me/?text=Track%20my%20SafeHer%20Ride%20live:%20${encodeURIComponent(link)}`;
+                openModal('shareModal');
+            }
+
+            function copyShareLink() {
+                const txt = document.getElementById('shareLink').textContent;
+                navigator.clipboard.writeText(txt).then(() => showToast('Link copied!', 'success'));
+            }
+
+            function toggleGuardianSharing() {
+                const current = localStorage.getItem('guardian_tracking') === 'true';
+                localStorage.setItem('guardian_tracking', !current);
+                document.getElementById('guardianEyeIcon').style.color = !current ? 'var(--success)' : 'var(--primary)';
+                document.getElementById('guardianBtnText').textContent = !current ? 'Live 🟢' : 'Guardian';
+                showToast(!current ? '👁️ Guardian tracking enabled' : 'Guardian tracking off', !current ? 'success' : 'info');
+            }
+
+            // Start predictive safety engine
+            if (typeof SafetyEngine !== 'undefined') {
+                SafetyEngine.start({ bookingId, showSafetyAlert, showSafePrompt });
+            }
+
+            // Store route coords globally for animation
+            let routeCoords = null;
+
+            // Extract route points from map
+            function extractRouteCoords() {
+                if (!SafeHerMap.map) return null;
+                let coords = null;
+                SafeHerMap.map.eachLayer(layer => {
+                    // Check if the layer is the route line (has feature with geometry)
+                    if (layer.feature && layer.feature.geometry && layer.feature.geometry.coordinates) {
+                        coords = layer.feature.geometry.coordinates.map(c => [c[1], c[0]]);
+                    } else if (layer instanceof L.Polyline && !layer.hasOwnProperty('editing')) {
+                        // Fallback: get latlngs directly from Polyline
+                        const latlngs = layer.getLatLngs();
+                        if (latlngs && latlngs.length > 2) {
+                            if (latlngs[0].lat !== undefined) {
+                                coords = latlngs.map(ll => [ll.lat, ll.lng]);
+                            } else if (latlngs[0][0] && latlngs[0][0].lat !== undefined) {
+                                coords = latlngs[0].map(ll => [ll.lat, ll.lng]);
+                            }
+                        }
+                    }
+                });
+                return coords;
+            }
+
+            // Demo: visually simulate driver movement on the map
+            function simulateDriverMovement() {
+                if (!booking.driver || !booking.pickup || !booking.drop) return;
+
+                // Get coords now that the route has been drawn
+                routeCoords = extractRouteCoords();
+                const driverLoc = (booking.driver.location && booking.driver.location.lat)
+                    ? booking.driver.location
+                    : { lat: booking.pickup.lat + 0.008, lng: booking.pickup.lng + 0.005 };
+
+                const startLat = driverLoc.lat;
+                const startLng = driverLoc.lng || driverLoc.lon || booking.pickup.lng;
+                const pickupLat = booking.pickup.lat;
+                const pickupLng = booking.pickup.lng;
+                const dropLat = booking.drop.lat;
+                const dropLng = booking.drop.lng;
+
+                let phase = 1;
+                let progress = 0;
+                const steps = 40;
+                const intervalTime = 800;
+
+                window.animInterval = null;
+                window.resumePhase2 = () => {
+                    phase = 2;
+                    progress = 0;
+                    updateRideStatus('onTrip');
+                    showToast('Ride has started! 🚙', 'success');
+                    // Update AI status
+                    document.getElementById('aiStatus').textContent = 'On Trip 🚕';
+                    document.getElementById('aiRoute').textContent = 'On Route ✅';
+
+                    // Use route coords if available, else straight line
+                    const coords = routeCoords && routeCoords.length > 2 ? routeCoords : null;
+                    const totalSteps = coords ? coords.length - 1 : steps;
+
+                    window.animInterval = setInterval(() => {
+                        progress += 1;
+
+                        let currentLat, currentLng;
+                        if (coords) {
+                            // Follow the actual route line
+                            const idx = Math.min(Math.floor((progress / steps) * totalSteps), totalSteps);
+                            [currentLat, currentLng] = coords[idx];
+                        } else {
+                            const t = progress / steps;
+                            currentLat = pickupLat + (dropLat - pickupLat) * t;
+                            currentLng = pickupLng + (dropLng - pickupLng) * t;
+                        }
+
+                        // Simulate speed variation for AI
+                        const speedKmh = Math.round(18 + Math.random() * 20);
+                        document.getElementById('aiSpeed').textContent = speedKmh + ' km/h';
+                        document.getElementById('aiSpeed').style.color = speedKmh > 35 ? 'var(--warning)' : 'var(--success)';
+
+                        if (progress >= steps) {
+                            clearInterval(window.animInterval);
+                            document.getElementById('driverFloatingStatus').textContent = 'Ride Completed 🏁';
+                            document.getElementById('aiStatus').textContent = 'Arrived ✅';
+                            document.getElementById('aiSafety').textContent = 'Safe 🌸';
+                            playSound('end');
+                            showToast('🏁 You have reached your destination!', 'success');
+                            setTimeout(() => window.location.href = 'history.html', 4000);
+                        }
+                        SafeHerMap.updateDriverPosition(currentLat, currentLng);
+                    }, intervalTime);
+                };
+
+                window.animInterval = setInterval(() => {
+                    progress += 1;
+                    const t = progress / steps;
+                    let currentLat = startLat + (pickupLat - startLat) * t;
+                    let currentLng = startLng + (pickupLng - startLng) * t;
+                    if (progress >= steps) {
+                        clearInterval(window.animInterval);
+                        document.getElementById('driverFloatingStatus').textContent = 'Driver Arrived';
+                        showToast('Driver has arrived! Please provide OTP.', 'info');
+                        openModal('otpModal');
+                    }
+                    SafeHerMap.updateDriverPosition(currentLat, currentLng);
+                }, intervalTime);
+            }
+
+            // Function linked to OTP modal button
+            function simulateDriverStartsRide() {
+                closeModal('otpModal');
+                document.getElementById('driverFloatingStatus').textContent = 'Ride in progress';
+                playSound('start');
+
+                if (window.resumePhase2) {
+                    window.resumePhase2();
+                }
+            }
+
+            // (Simulation is now started safely after map init in the async block above)
+
+            function updateRideStatus(status) {
+                const statusPill = document.getElementById('statusPill');
+                const statusText = document.getElementById('rideStatusText');
+                if (status === 'onTrip') {
+                    statusPill.className = 'status-pill status-ontrip'; statusPill.textContent = '🟢 On Trip';
+                    statusText.textContent = 'Ride In Progress';
+                    document.getElementById('tl-arriving').className = 'timeline-item done';
+                    document.getElementById('tl-arriving').querySelector('.timeline-dot').innerHTML = '✓';
+                    document.getElementById('tl-trip').className = 'timeline-item active';
+                }
+            }
+        </script>
+</body>
+
+</html>
