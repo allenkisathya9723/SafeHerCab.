@@ -856,25 +856,25 @@
                 window.animInterval = setInterval(() => {
                     progress += 1;
                     let currentLat, currentLng;
-                    if (routeCoords && progress >= 0) {
-                        const totalSteps = routeCoords.length - 1;
-                        // Limit phase 1 to first 20% of route if using real route
-                        let idx = Math.min(Math.floor((progress / steps) * (totalSteps * 0.2)), totalSteps);
-                        if (idx < 0) idx = 0;
-                        [currentLat, currentLng] = routeCoords[idx];
-                    } else {
-                        const t = progress / steps;
-                        currentLat = startLat + (pickupLat - startLat) * t;
-                        currentLng = startLng + (pickupLng - startLng) * t;
-                    }
+
+                    // Always calculate a straight line from driver's arbitrary start location 
+                    // directly to the exact pickup coordinates
+                    const t = progress / steps;
+                    currentLat = startLat + (pickupLat - startLat) * t;
+                    currentLng = startLng + (pickupLng - startLng) * t;
+
+                    SafeHerMap.updateDriverPosition(currentLat, currentLng);
 
                     if (progress >= steps) {
                         clearInterval(window.animInterval);
+
+                        // Force snap exactly to pickup upon arrival to prevent floating point drift
+                        SafeHerMap.updateDriverPosition(pickupLat, pickupLng);
+
                         document.getElementById('driverFloatingStatus').textContent = 'Driver Arrived';
                         showToast('Driver has arrived! Please provide OTP.', 'info');
                         openModal('otpModal');
                     }
-                    SafeHerMap.updateDriverPosition(currentLat, currentLng);
                 }, intervalTime);
             }
 
