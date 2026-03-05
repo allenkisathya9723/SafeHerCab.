@@ -787,6 +787,9 @@
             function simulateDriverMovement() {
                 if (!booking.driver || !booking.pickup || !booking.drop) return;
 
+                // Clear any existing animation to prevent overlap
+                if (window.animInterval) clearInterval(window.animInterval);
+
                 // Get coords now that the route has been drawn
                 routeCoords = extractRouteCoords();
                 const driverLoc = (booking.driver.location && booking.driver.location.lat)
@@ -800,14 +803,15 @@
                 const dropLat = booking.drop.lat;
                 const dropLng = booking.drop.lng;
 
-                let phase = 1;
                 let progress = 0;
-                const steps = 40;
-                const intervalTime = 800;
+                const steps = 50;
+                const intervalTime = 700;
 
-                window.animInterval = null;
+                // Ensure driver marker is visible immediately at starting position
+                SafeHerMap.setDriver(startLat, startLng, booking.driver.name, booking.driver.vehicleType);
+
                 window.resumePhase2 = () => {
-                    phase = 2;
+                    if (window.animInterval) clearInterval(window.animInterval);
                     progress = 0;
                     updateRideStatus('onTrip');
                     showToast('Ride has started! 🚙', 'success');
@@ -835,10 +839,9 @@
                             currentLng = pickupLng + (dropLng - pickupLng) * t;
                         }
 
-                        // Simulate speed variation for AI
-                        const speedKmh = Math.round(18 + Math.random() * 20);
+                        // AI metrics simulation
+                        const speedKmh = Math.round(20 + Math.random() * 15);
                         document.getElementById('aiSpeed').textContent = speedKmh + ' km/h';
-                        document.getElementById('aiSpeed').style.color = speedKmh > 35 ? 'var(--warning)' : 'var(--success)';
 
                         if (progress >= steps) {
                             clearInterval(window.animInterval);
