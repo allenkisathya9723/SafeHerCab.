@@ -277,7 +277,8 @@
                 <div class="page-indicator" id="step2">
                     <h2 style="margin-bottom:6px;font-size:1.3rem">Enter OTP</h2>
                     <p style="color:var(--gray-500);font-size:0.88rem;margin-bottom:8px" id="otpSentMsg">OTP sent to
-                        <strong id="sentPhone"></strong></p>
+                        <strong id="sentPhone"></strong>
+                    </p>
                     <p style="color:var(--gray-500);font-size:0.8rem;margin-bottom:24px">(For demo: check server console
                         for OTP)</p>
 
@@ -291,7 +292,7 @@
                     </div>
 
                     <div class="otp-timer" style="margin:20px 0">
-                        <span id="timerDisplay">Resend OTP in <span id="countdown">60</span>s</span>
+                        <span id="timerDisplay">Resend OTP in <span id="countdown">5</span>s</span>
                         <button class="resend-btn" id="resendBtn" disabled onclick="resendOTP()"
                             style="display:none">Resend OTP</button>
                     </div>
@@ -358,10 +359,6 @@
                         onclick="completeProfile()">
                         <i class="fa-solid fa-check"></i> Complete & Start Riding 🌸
                     </button>
-                    <button class="btn" style="width:100%;margin-top:8px;color:var(--gray-500);font-size:0.85rem"
-                        onclick="skipProfile()">
-                        Skip for now →
-                    </button>
                 </div>
 
             </div>
@@ -427,7 +424,20 @@
                 if (res.devOtp) showToast(`✅ Dev OTP: ${res.devOtp}`, 'info');
                 document.getElementById('sentPhone').textContent = `+91 ${raw}`;
                 goStep(2);
-                startTimer(60);
+                startTimer(5);
+
+                // Auto-detect & enter OTP
+                if (res.devOtp) {
+                    showToast(`✅ Auto-detecting OTP...`, 'info');
+                    setTimeout(() => {
+                        const otpStr = String(res.devOtp);
+                        for (let i = 0; i < 6; i++) {
+                            const el = document.getElementById(`otp${i}`);
+                            if (el) { el.value = otpStr[i] || ''; el.classList.add('filled'); }
+                        }
+                        verifyOTP();
+                    }, 1000);
+                }
             } catch (e) {
                 showToast(e.message || 'Failed to send OTP', 'error');
             } finally {
@@ -490,11 +500,6 @@
             }
         }
 
-        function skipProfile() {
-            showToast('Welcome to SafeHer Ride! 🌸 You can complete profile later.', 'info');
-            setTimeout(() => window.location.href = 'booking.html', 1200);
-        }
-
         // ── Steps navigation ──
         const stepHeaders = ['Enter your mobile number to get started', 'Enter the 6-digit OTP sent to your phone', 'Set up your safety profile'];
         function goStep(n) {
@@ -541,10 +546,24 @@
                 const res = await API.post('/auth/send-otp', { phone: phoneNumber });
                 if (res.devOtp) showToast(`✅ Dev OTP: ${res.devOtp}`, 'info');
                 showToast('OTP resent!', 'success');
-                startTimer(60);
+                startTimer(5);
+
                 // Clear OTP boxes
                 for (let i = 0; i < 6; i++) { const el = document.getElementById(`otp${i}`); el.value = ''; el.classList.remove('filled'); }
                 document.getElementById('otp0').focus();
+
+                // Auto-detect & enter OTP
+                if (res.devOtp) {
+                    showToast(`✅ Auto-detecting OTP...`, 'info');
+                    setTimeout(() => {
+                        const otpStr = String(res.devOtp);
+                        for (let i = 0; i < 6; i++) {
+                            const el = document.getElementById(`otp${i}`);
+                            if (el) { el.value = otpStr[i] || ''; el.classList.add('filled'); }
+                        }
+                        verifyOTP();
+                    }, 1000);
+                }
             } catch (e) {
                 showToast(e.message || 'Failed to resend', 'error');
                 document.getElementById('resendBtn').disabled = false;

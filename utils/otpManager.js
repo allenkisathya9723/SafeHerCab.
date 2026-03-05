@@ -2,8 +2,7 @@
 const otpStore = new Map();
 
 const OTP_EXPIRY = (parseInt(process.env.OTP_EXPIRY_MINUTES) || 10) * 60 * 1000;
-const MAX_ATTEMPTS = parseInt(process.env.OTP_MAX_ATTEMPTS) || 3;
-const RESEND_COOLDOWN = 60 * 1000; // 1 min
+const RESEND_COOLDOWN = 5 * 1000; // 5 sec
 
 function generateOTP() {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -20,7 +19,6 @@ function storeOTP(phone, otp) {
 
     otpStore.set(phone, {
         otp,
-        attempts: 0,
         createdAt: now,
         expiresAt: now + OTP_EXPIRY
     });
@@ -34,13 +32,8 @@ function verifyOTP(phone, inputOtp) {
         otpStore.delete(phone);
         return { success: false, message: 'OTP expired. Please request a new OTP.' };
     }
-    if (record.attempts >= MAX_ATTEMPTS) {
-        otpStore.delete(phone);
-        return { success: false, message: 'Too many failed attempts. Please request a new OTP.' };
-    }
     if (record.otp !== inputOtp) {
-        record.attempts++;
-        return { success: false, message: `Invalid OTP. ${MAX_ATTEMPTS - record.attempts} attempts remaining.` };
+        return { success: false, message: 'Invalid OTP. Please try again.' };
     }
     otpStore.delete(phone);
     return { success: true };

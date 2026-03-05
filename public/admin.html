@@ -601,59 +601,58 @@
             <img src="${d.photo}" alt="${d.name}" />
             <div style="flex:1"><div style="font-size:0.9rem;font-weight:600">${d.name}</div><div style="font-size:0.77rem;color:rgba(255,255,255,0.4)">${d.vehicleType} · ${d.vehicleNumber} · ⭐${d.rating} · ${d.totalRides} rides</div></div>
             <span class="badge ${d.approved ? 'badge-success' : 'badge-warning'}">${d.approved ? 'Approved' : 'Pending'}</span>
-            <button onclick="toggleDriver('${d.id}',${!d.approved})" class="btn btn-sm" style="background:${d.approved ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)';
-            }; color:${ d.approved ? 'var(--danger)' : 'var(--success)' }; margin - left: 8px">${d.approved?'Suspend':'Approve'}</button>
-          </div > `).join('');
+            <button onclick="toggleDriver('${d.id}',${!d.approved})" class="btn btn-sm" style="background:${d.approved ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)'}; color:${d.approved ? 'var(--danger)' : 'var(--success)'}; margin-left:8px">${d.approved ? 'Suspend' : 'Approve'}</button>
+          </div>`).join('');
 
-        // Recent bookings table
-        const bookings = res.recentBookings || [];
-        document.getElementById('ridesTableBody').innerHTML = bookings.length ? bookings.map(b => `
-                < tr class="${b.sosTriggered?'sos-row':''}" >
+                // Recent bookings table
+                const bookings = res.recentBookings || [];
+                document.getElementById('ridesTableBody').innerHTML = bookings.length ? bookings.map(b => `
+          <tr class="${b.sosTriggered ? 'sos-row' : ''}">
             <td><code style="font-size:0.8rem">${b.id}</code></td>
             <td>${b.userId || '-'}</td>
             <td>${b.driverId || 'Assigning...'}</td>
             <td>${b.vehicleType || '-'}</td>
-            <td><span class="badge ${b.status==='onTrip'?'badge-success':b.status==='emergency'?'badge-danger':'badge-warning'}">${b.status}</span></td>
+            <td><span class="badge ${b.status === 'onTrip' ? 'badge-success' : b.status === 'emergency' ? 'badge-danger' : 'badge-warning'}">${b.status}</span></td>
             <td style="font-size:0.8rem">${new Date(b.createdAt).toLocaleTimeString('en-IN')}</td>
             <td>
               <button onclick="viewBooking('${b.id}')" class="btn btn-sm" style="background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.6)">View</button>
-              ${b.sosTriggered?'<span class="badge badge-danger" style="margin-left:4px">SOS!</span>':''}
+              ${b.sosTriggered ? '<span class="badge badge-danger" style="margin-left:4px">SOS!</span>' : ''}
             </td>
-          </tr > `).join('') : '<tr><td colspan="7" style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">No rides yet</td></tr>';
-        document.getElementById('logsTableBody').innerHTML = document.getElementById('ridesTableBody').innerHTML;
-      } catch(e) { console.log('Dashboard load error:', e.message); }
-    }
+          </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:rgba(255,255,255,0.3);padding:40px">No rides yet</td></tr>';
+                document.getElementById('logsTableBody').innerHTML = document.getElementById('ridesTableBody').innerHTML;
+            } catch (e) { console.log('Dashboard load error:', e.message); }
+        }
 
-    function showTab(tab) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.sidebar-nav a').forEach(el => el.classList.remove('active'));
-      document.getElementById('tab-' + tab).classList.add('active');
-      const titles = { overview:'📊 Overview', rides:'🚖 Active Rides', sos:'🚨 SOS Alerts', drivers:'👩 Driver Management', logs:'📋 Ride Logs', analytics:'📈 Analytics' };
-      document.getElementById('tabTitle').textContent = titles[tab] || tab;
-      event.currentTarget.classList.add('active');
-    }
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sidebar-nav a').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            const titles = { overview: '📊 Overview', rides: '🚖 Active Rides', sos: '🚨 SOS Alerts', drivers: '👩 Driver Management', logs: '📋 Ride Logs', analytics: '📈 Analytics' };
+            document.getElementById('tabTitle').textContent = titles[tab] || tab;
+            event.currentTarget.classList.add('active');
+        }
 
-    function filterRides(status) {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      event.currentTarget.classList.add('active');
-    }
+        function filterRides(status) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+        }
 
-    function addActivity(msg) {
-      const feed = document.getElementById('activityFeed');
-      const div = document.createElement('div');
-      div.style.cssText = 'padding:10px;background:#252525;border-radius:8px;font-size:0.82rem;color:rgba(255,255,255,0.6)';
-      div.textContent = `${ new Date().toLocaleTimeString('en-IN') } – ${ msg } `;
-      feed.prepend(div);
-      if (feed.children.length > 50) feed.lastChild.remove();
-    }
+        function addActivity(msg) {
+            const feed = document.getElementById('activityFeed');
+            const div = document.createElement('div');
+            div.style.cssText = 'padding:10px;background:#252525;border-radius:8px;font-size:0.82rem;color:rgba(255,255,255,0.6)';
+            div.textContent = `${new Date().toLocaleTimeString('en-IN')} – ${msg}`;
+            feed.prepend(div);
+            if (feed.children.length > 50) feed.lastChild.remove();
+        }
 
-    async function toggleDriver(id, approve) {
-      try {
-        await fetch(`/ api / drivers / ${ id } /approve`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({approved: approve}) });
-            showToast(approve ? 'Driver approved ✅' : 'Driver suspended ⚠️', approve ? 'success' : 'warning');
-            loadDashboard();
-        } catch (e) { showToast('Error: ' + e.message, 'error'); }
-    }
+        async function toggleDriver(id, approve) {
+            try {
+                await fetch(`/api/drivers/${id}/approve`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ approved: approve }) });
+                showToast(approve ? 'Driver approved ✅' : 'Driver suspended ⚠️', approve ? 'success' : 'warning');
+                loadDashboard();
+            } catch (e) { showToast('Error: ' + e.message, 'error'); }
+        }
 
         function refreshDashboard() { loadDashboard(); showToast('Dashboard refreshed', 'info'); }
         function viewBooking(id) { showToast(`Booking ${id} opened in detail view`, 'info'); }
