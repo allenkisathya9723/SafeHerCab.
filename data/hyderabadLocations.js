@@ -1,6 +1,25 @@
 // SafeHerCab – Hyderabad Locations Database (JS version for Express backend)
 // Source: data/hyderabadLocations.ts (200+ places across 16 categories)
 
+const fs = require('fs');
+const path = require('path');
+
+let ghmcLocations = [];
+try {
+    const dataPath = path.join(__dirname, '../public/data/ghmc_locations.json');
+    if (fs.existsSync(dataPath)) {
+        const raw = fs.readFileSync(dataPath, 'utf8');
+        ghmcLocations = JSON.parse(raw).map(item => ({
+            name: item.name,
+            lat: item.lat,
+            lon: item.lng, // map lng to lon for consistency with the existing data
+            category: 'Landmark' // Default category for GHMC spots
+        }));
+    }
+} catch (e) {
+    console.error('Failed to load GHMC locations JSON:', e.message);
+}
+
 const hyderabadLocations = [
     // Famous Places & Landmarks
     { name: "Charminar", lat: 17.3616, lon: 78.4747, category: "Landmark" },
@@ -189,6 +208,8 @@ const hyderabadLocations = [
     { name: "Taramati Baradari", lat: 17.3750, lon: 78.3950, category: "Tourist Place" },
 ];
 
+const allLocations = [...hyderabadLocations, ...ghmcLocations];
+
 /**
  * Search locations by name (fuzzy, case-insensitive).
  * @param {string} query
@@ -197,7 +218,7 @@ const hyderabadLocations = [
  */
 function searchLocations(query, limit = 8) {
     const q = query.toLowerCase();
-    return hyderabadLocations
+    return allLocations
         .filter(loc => loc.name.toLowerCase().includes(q))
         .slice(0, limit);
 }
@@ -210,8 +231,9 @@ function searchLocations(query, limit = 8) {
  */
 function getCoordsForLocation(name) {
     const q = name.toLowerCase();
-    const match = hyderabadLocations.find(loc => loc.name.toLowerCase().includes(q));
+    const match = allLocations.find(loc => loc.name && loc.name.toLowerCase().includes(q));
     return match ? { lat: match.lat, lon: match.lon } : { lat: 17.3850, lon: 78.4867 };
 }
 
-module.exports = { hyderabadLocations, searchLocations, getCoordsForLocation };
+// Ensure the new JSON is exposed, too
+module.exports = { hyderabadLocations: allLocations, searchLocations, getCoordsForLocation };

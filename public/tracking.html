@@ -825,6 +825,8 @@
                         let currentLat, currentLng;
                         if (coords) {
                             // Follow the actual route line
+                            const totalSteps = coords.length - 1;
+                            // Make sure we never exceed the array length
                             const idx = Math.min(Math.floor((progress / steps) * totalSteps), totalSteps);
                             [currentLat, currentLng] = coords[idx];
                         } else {
@@ -853,9 +855,19 @@
 
                 window.animInterval = setInterval(() => {
                     progress += 1;
-                    const t = progress / steps;
-                    let currentLat = startLat + (pickupLat - startLat) * t;
-                    let currentLng = startLng + (pickupLng - startLng) * t;
+                    let currentLat, currentLng;
+                    if (routeCoords && progress >= 0) {
+                        const totalSteps = routeCoords.length - 1;
+                        // Limit phase 1 to first 20% of route if using real route
+                        let idx = Math.min(Math.floor((progress / steps) * (totalSteps * 0.2)), totalSteps);
+                        if (idx < 0) idx = 0;
+                        [currentLat, currentLng] = routeCoords[idx];
+                    } else {
+                        const t = progress / steps;
+                        currentLat = startLat + (pickupLat - startLat) * t;
+                        currentLng = startLng + (pickupLng - startLng) * t;
+                    }
+
                     if (progress >= steps) {
                         clearInterval(window.animInterval);
                         document.getElementById('driverFloatingStatus').textContent = 'Driver Arrived';
