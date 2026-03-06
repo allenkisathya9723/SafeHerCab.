@@ -52,9 +52,9 @@ async function sendOTPSms(phone, otp) {
 /**
  * Send SOS alert to guardian
  */
-async function sendSOSAlert(guardianPhone, riderName, driverName, vehicleNumber, locationLink) {
+async function sendSOSAlert(guardianPhone, customerName, driverName, vehicleNumber, locationLink) {
     const message = `🚨 SOS ALERT from SafeHer Ride!\n` +
-        `${riderName} has triggered an emergency.\n` +
+        `${customerName} has triggered an emergency.\n` +
         `Driver: ${driverName} | Vehicle: ${vehicleNumber}\n` +
         `Live Location: ${locationLink}\n` +
         `Please call her immediately!`;
@@ -64,9 +64,9 @@ async function sendSOSAlert(guardianPhone, riderName, driverName, vehicleNumber,
 /**
  * Send Police alert
  */
-async function sendPoliceAlert(policePhone, riderName, driverName, vehicleNumber, locationLink) {
+async function sendPoliceAlert(policePhone, customerName, driverName, vehicleNumber, locationLink) {
     const message = `🚨 EMERGENCY DISPATCH: SafeHer Ride Incident!\n` +
-        `Rider: ${riderName} is in Danger.\n` +
+        `Customer: ${customerName} is in Danger.\n` +
         `Driver: ${driverName} | Vehicle: ${vehicleNumber}\n` +
         `Live GPS: ${locationLink}\n` +
         `Please dispatch immediately!`;
@@ -76,9 +76,9 @@ async function sendPoliceAlert(policePhone, riderName, driverName, vehicleNumber
 /**
  * Send offline emergency SMS when internet fails
  */
-async function sendOfflineEmergency(guardianPhone, riderName, lastLat, lastLng, driverName, vehicleNumber) {
+async function sendOfflineEmergency(guardianPhone, customerName, lastLat, lastLng, driverName, vehicleNumber) {
     const message = `🆘 EMERGENCY – SafeHer Ride OFFLINE\n` +
-        `${riderName}'s internet disconnected during ride.\n` +
+        `${customerName}'s internet disconnected during ride.\n` +
         `Last known location: https://maps.google.com/?q=${lastLat},${lastLng}\n` +
         `Driver: ${driverName} | Vehicle: ${vehicleNumber}\n` +
         `Please contact her immediately!`;

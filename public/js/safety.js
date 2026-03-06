@@ -215,7 +215,7 @@ const SafetyEngine = (() => {
             const guardianPhone = localStorage.getItem('guardian_phone') || '100';
 
             const message = `🚨 EMERGENCY – SafeHer Ride OFFLINE\n` +
-                `Rider: ${user.name || 'Priya'}\n` +
+                `Customer: ${user.name || 'Priya'}\n` +
                 `Driver: ${booking.driver?.name || 'Unknown'}\n` +
                 `Vehicle: ${booking.driver?.vehicleNumber || 'Unknown'}\n` +
                 `Last Location:\nhttps://maps.google.com/?q=${lastPoint.lat},${lastPoint.lng}\n` +
