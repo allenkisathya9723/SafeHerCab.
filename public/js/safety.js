@@ -74,6 +74,9 @@ const SafetyEngine = (() => {
         checkRouteDeviation(point);
         checkDelay();
 
+        // New: Offline Safety Caching
+        if (OfflineSafety) OfflineSafety.cachePoint(point);
+
         // Update safety status
         const speedStr = point.speed > 0 ? `${Math.round(point.speed)} km/h` : 'idle';
         updateSafetyStatus(`✅ Monitoring active · Speed: ${speedStr} · GPS: ${point.accuracy < 30 ? 'accurate' : 'approx'}`);
@@ -162,5 +165,89 @@ const SafetyEngine = (() => {
         if (el) el.textContent = msg;
     }
 
-    return { start, stop };
+    // ── Offline Safety ────────────────────────────────────────────────────
+    const OfflineSafety = {
+        isOffline: !navigator.onLine,
+        offlineStartTime: null,
+        lastSmsTime: 0,
+        SMS_COOLDOWN_MS: 2 * 60 * 1000, // 2 minutes
+        OFFLINE_THRESHOLD_MS: 2 * 60 * 1000, // 2 minutes
+        MAX_CACHE_POINTS: 10,
+
+        onOffline() {
+            this.isOffline = true;
+            this.offlineStartTime = Date.now();
+            updateSafetyStatus('⚠️ Network lost! Monitoring continues offline.');
+            console.log('[OfflineSafety] Device went offline');
+        },
+
+        async onOnline() {
+            this.isOffline = false;
+            this.offlineStartTime = null;
+            updateSafetyStatus('✅ Network restored. Syncing data...');
+            await this.syncData();
+            console.log('[OfflineSafety] Device back online');
+        },
+
+        cachePoint(point) {
+            if (!this.isOffline) return;
+
+            let cached = JSON.parse(localStorage.getItem('offline_gps_cache') || '[]');
+            cached.push({ ...point, timestamp: Date.now() });
+
+            // Limit to last 10 points
+            if (cached.length > this.MAX_CACHE_POINTS) cached.shift();
+            localStorage.setItem('offline_gps_cache', JSON.stringify(cached));
+
+            // Check if we should trigger emergency SMS (if offline for > 2 mins)
+            if (this.offlineStartTime && (Date.now() - this.offlineStartTime > this.OFFLINE_THRESHOLD_MS)) {
+                this.triggerEmergencySMS(point);
+            }
+        },
+
+        triggerEmergencySMS(lastPoint) {
+            // Cooldown check
+            if (Date.now() - this.lastSmsTime < this.SMS_COOLDOWN_MS) return;
+            this.lastSmsTime = Date.now();
+
+            const booking = config.booking || JSON.parse(localStorage.getItem('active_booking') || '{}');
+            const user = JSON.parse(localStorage.getItem('safehercab_user') || '{}');
+            const guardianPhone = localStorage.getItem('guardian_phone') || '100';
+
+            const message = `🚨 EMERGENCY – SafeHer Ride OFFLINE\n` +
+                `Rider: ${user.name || 'Priya'}\n` +
+                `Driver: ${booking.driver?.name || 'Unknown'}\n` +
+                `Vehicle: ${booking.driver?.vehicleNumber || 'Unknown'}\n` +
+                `Last Location:\nhttps://maps.google.com/?q=${lastPoint.lat},${lastPoint.lng}\n` +
+                `Ride ID: ${config.bookingId}`;
+
+            console.warn('[OfflineSafety] Triggering SMS Fallback');
+            window.open(`sms:${guardianPhone}?body=${encodeURIComponent(message)}`);
+            config.showSafetyAlert?.('🚨 Connection lost too long. Emergency SMS generated!', 'danger');
+        },
+
+        async syncData() {
+            const cached = JSON.parse(localStorage.getItem('offline_gps_cache') || '[]');
+            if (!cached.length) return;
+
+            try {
+                const user = JSON.parse(localStorage.getItem('safehercab_user') || '{}');
+                await fetch('/api/tracking/offline-sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        bookingId: config.bookingId,
+                        userId: user.id,
+                        points: cached
+                    })
+                });
+                localStorage.removeItem('offline_gps_cache');
+                console.log('[OfflineSafety] Synced offline data');
+            } catch (e) {
+                console.warn('[OfflineSafety] Sync failed, will retry later');
+            }
+        }
+    };
+
+    return { start, stop, OfflineSafety, onPositionUpdate };
 })();

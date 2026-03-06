@@ -158,36 +158,16 @@ function selectSuggestion(name, inputId, suggId, lat = 0, lon = 0) {
 }
 
 // ─── Network Failure Detection ─────────────────────────────────────────────────
-let wasOnline = true;
 window.addEventListener('online', () => {
-    if (!wasOnline) {
-        showToast('✅ Internet restored. All systems normal.', 'success');
-        wasOnline = true;
+    showToast('✅ Internet restored. All systems normal.', 'success');
+    if (typeof SafetyEngine !== 'undefined' && SafetyEngine.OfflineSafety) {
+        SafetyEngine.OfflineSafety.onOnline();
     }
 });
 window.addEventListener('offline', () => {
-    wasOnline = false;
-    showToast('⚠️ Internet lost! Emergency SMS being sent to guardian...', 'error', 8000);
-    // Trigger offline alert to backend (will likely fail, but try)
-    const booking = JSON.parse(localStorage.getItem('active_booking') || '{}');
-    const user = JSON.parse(localStorage.getItem('safehercab_user') || '{}');
-    if (booking.id && navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((pos) => {
-            fetch('/api/tracking/offline-alert', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    bookingId: booking.id,
-                    userId: user.id,
-                    guardianPhone: localStorage.getItem('guardian_phone') || '',
-                    driverName: booking.driver?.name || 'Unknown',
-                    vehicleNumber: booking.driver?.vehicleNumber || 'Unknown',
-                    lastLat: pos.coords.latitude,
-                    lastLng: pos.coords.longitude,
-                    userName: user.name || user.phone
-                })
-            }).catch(() => { }); // Expected to fail offline
-        }).catch(() => { });
+    showToast('⚠️ Internet lost! Safety monitoring is now running offline.', 'error', 8000);
+    if (typeof SafetyEngine !== 'undefined' && SafetyEngine.OfflineSafety) {
+        SafetyEngine.OfflineSafety.onOffline();
     }
 });
 

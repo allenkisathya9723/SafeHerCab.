@@ -16,6 +16,40 @@ router.post('/update', (req, res) => {
     }
 });
 
+// POST /api/tracking/offline-sync – Push cached GPS data from offline period
+router.post('/offline-sync', async (req, res) => {
+    try {
+        const { bookingId, userId, points } = req.body;
+        const logger = require('../utils/logger');
+
+        if (!points || !points.length) return res.json({ success: true, message: 'No points to sync' });
+
+        logger.info(`📥 Syncing ${points.length} offline points for booking ${bookingId}`);
+
+        // In a real DB we would store these trajectory points
+        // For now, we emit the last one as current location to update admin dashboard
+        const lastPoint = points[points.length - 1];
+        const io = req.app.get('io');
+        if (io && bookingId) {
+            io.to(bookingId).emit('locationUpdate', {
+                ...lastPoint,
+                isSynced: true,
+                timestamp: lastPoint.timestamp || Date.now()
+            });
+            io.to('admin').emit('rideLocationUpdate', {
+                bookingId,
+                userId,
+                ...lastPoint,
+                isSynced: true
+            });
+        }
+
+        res.json({ success: true, synced: points.length });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // POST /api/tracking/offline-alert – Network failure detected by client
 // NOTE: Must be before /:bookingId to avoid matching 'offline-alert' as a param
 router.post('/offline-alert', async (req, res) => {
