@@ -56,11 +56,11 @@ router.post('/verify-otp', async (req, res) => {
 // POST /api/auth/register (update profile after first login)
 router.post('/register', async (req, res) => {
     try {
-        const { phone, name, email, guardianPhone } = req.body;
+        const { phone, name, email, guardianPhone, guardianEmail } = req.body;
         if (!phone || !name) return res.status(400).json({ error: 'Phone and name required' });
 
         let user = mockUsers.get(phone) || { id: `usr_${Date.now()}`, phone };
-        user = { ...user, name, email, guardianPhone, isNew: false, updatedAt: new Date() };
+        user = { ...user, name, email, guardianPhone, guardianEmail, isNew: false, updatedAt: new Date() };
         mockUsers.set(phone, user);
 
         const token = generateToken({ userId: user.id, phone, role: 'user' });

@@ -19,6 +19,7 @@ const sosEventSchema = new mongoose.Schema({
     },
     alertsSent: {
         guardian: { type: Boolean, default: false },
+        email: { type: Boolean, default: false },
         police: { type: Boolean, default: false },
         admin: { type: Boolean, default: false }
     },

@@ -687,9 +687,15 @@
                             driverName: booking.driver?.name || 'Unknown',
                             vehicleNumber: booking.driver?.vehicleNumber || 'Unknown',
                             lat, lng,
-                            guardianPhone: localStorage.getItem('guardian_phone') || ''
+                            guardianPhone: localStorage.getItem('guardian_phone') || '',
+                            guardianEmail: localStorage.getItem('guardian_email') || ''
                         });
                         const ps = res.nearestPoliceStation;
+                        const gPhone = localStorage.getItem('guardian_phone') || '';
+                        const msg = encodeURIComponent(`🚨 SOS EMERGENCY!\nI am in danger on my SafeHer ride.\nTrack me here: https://maps.google.com/?q=${lat},${lng}`);
+                        const waLink = `https://wa.me/${gPhone}?text=${msg}`;
+                        const smsLink = `sms:${gPhone}?body=${msg}`;
+
                         document.getElementById('sosDetails').innerHTML = `
               <div style="background:var(--gray-100);border-radius:var(--radius-md);padding:14px;margin-bottom:12px">
                 <div style="font-size:0.8rem;color:var(--gray-500);margin-bottom:6px">NEAREST POLICE STATION</div>
@@ -697,7 +703,17 @@
                 <div style="font-size:0.82rem;color:var(--gray-500)">${ps?.address || ''}</div>
                 <div style="font-size:0.82rem;margin-top:6px"><strong>${ps?.distance || '--'} km away</strong></div>
               </div>
-              <div class="badge badge-success" style="margin-bottom:4px">✅ Guardian Alert Sent</div><br>
+              
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+                <a href="${waLink}" target="_blank" class="btn btn-outline" style="color:#25D366;border-color:#25D366;padding:10px;font-size:0.8rem">
+                  <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                </a>
+                <a href="${smsLink}" class="btn btn-outline" style="color:var(--primary);border-color:var(--primary);padding:10px;font-size:0.8rem">
+                  <i class="fa-solid fa-message"></i> Direct SMS
+                </a>
+              </div>
+
+              <div class="badge badge-success" style="margin-bottom:4px">✅ Guardian & Email Sent</div><br>
               <div class="badge badge-danger">🚨 Police Station Alerted</div>
             `;
                         openModal('sosModal');

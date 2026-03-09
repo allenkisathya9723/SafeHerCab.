@@ -12,6 +12,7 @@ const userSchema = new mongoose.Schema({
         relation: String
     }],
     guardianPhone: { type: String, default: '' },
+    guardianEmail: { type: String, trim: true, lowercase: true, default: '' },
     guardianTrackingEnabled: { type: Boolean, default: false },
     savedAddresses: [{
         label: String,

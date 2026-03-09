@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { sendSOSAlert, sendPoliceAlert } = require('../utils/smsHelper');
+const { sendSOSEmail } = require('../utils/emailHelper');
 const logger = require('../utils/logger');
 const { findNearestStations, hyderabadPoliceStations } = require('../data/hyderabadPoliceStations');
 
@@ -26,7 +27,7 @@ router.get('/police', (req, res) => {
 // POST /api/emergency/sos
 router.post('/sos', async (req, res) => {
     try {
-        const { bookingId, userId, userName, userPhone, driverName, vehicleNumber, lat, lng, guardianPhone } = req.body;
+        const { bookingId, userId, userName, userPhone, driverName, vehicleNumber, lat, lng, guardianPhone, guardianEmail } = req.body;
 
         if (!lat || !lng) return res.status(400).json({ error: 'Location required for SOS' });
 
@@ -50,7 +51,7 @@ router.post('/sos', async (req, res) => {
             bookingId, userId, userName, userPhone, driverName, vehicleNumber,
             location: { lat: userLat, lng: userLng },
             nearestPoliceStation: nearestPS,
-            alertsSent: { guardian: false, police: false, admin: true },
+            alertsSent: { guardian: false, email: false, police: false, admin: true },
             status: 'active',
             createdAt: new Date()
         };
@@ -69,6 +70,19 @@ router.post('/sos', async (req, res) => {
         if (guardianPhone) {
             alertResults.guardian = await sendSOSAlert(guardianPhone, userName || userPhone, driverName || 'Unknown', vehicleNumber || 'Unknown', locationLink);
             sosEvent.alertsSent.guardian = alertResults.guardian.success;
+        }
+
+        // Send Email to guardian
+        logger.info(`SOS Check: guardianEmail=${guardianEmail}`);
+        if (guardianEmail) {
+            alertResults.email = await sendSOSEmail(guardianEmail, {
+                userName: userName || userPhone,
+                userPhone,
+                driverName: driverName || 'Unknown',
+                vehicleNumber: vehicleNumber || 'Unknown',
+                locationLink
+            });
+            sosEvent.alertsSent.email = alertResults.email.success;
         }
 
         // Send SMS to nearest police station

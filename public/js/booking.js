@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (userInfoEl && user.name) userInfoEl.textContent = `👋 ${user.name}`;
 
     if (user.guardianPhone) localStorage.setItem('guardian_phone', user.guardianPhone);
+    if (user.guardianEmail) localStorage.setItem('guardian_email', user.guardianEmail);
 
     // Init map
     setTimeout(() => {

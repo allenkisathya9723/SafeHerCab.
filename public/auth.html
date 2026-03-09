@@ -353,6 +353,11 @@
                             <input type="text" class="form-input" id="guardianName"
                                 placeholder="e.g. Amma / Naanna / Husband" />
                         </div>
+                        <div class="form-group" style="margin-top:12px">
+                            <label class="form-label">Guardian Email</label>
+                            <input type="email" class="form-input" id="guardianEmail"
+                                placeholder="guardian@gmail.com" />
+                        </div>
                     </div>
 
                     <button class="btn btn-primary" style="width:100%;margin-top:24px" id="completeProfileBtn"
@@ -486,11 +491,16 @@
                     name,
                     email: document.getElementById('emailInput').value,
                     guardianPhone: document.getElementById('guardianPhone').value.replace(/\D/g, ''),
-                    guardianName: document.getElementById('guardianName').value
+                    guardianName: document.getElementById('guardianName').value,
+                    guardianEmail: document.getElementById('guardianEmail').value
                 };
                 const res = await API.post('/auth/register', body);
                 localStorage.setItem('safehercab_token', res.token);
                 localStorage.setItem('safehercab_user', JSON.stringify(res.user));
+
+                // Save guardian details for SOS alerts
+                if (body.guardianPhone) localStorage.setItem('guardian_phone', body.guardianPhone);
+                if (body.guardianEmail) localStorage.setItem('guardian_email', body.guardianEmail);
                 showToast('Profile saved! Welcome to SafeHer Ride 🌸', 'success');
                 setTimeout(() => window.location.href = 'booking.html', 1500);
             } catch (e) {
