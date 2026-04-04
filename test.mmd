@@ -1,0 +1,38 @@
+classDiagram
+    direction RL
+    class LoginPage {
+        -username
+        -password
+        +login()
+        +validateUser()
+    }
+    class User {
+        -userID
+        -name
+        -phone
+        -email
+        +bookRide()
+        +updateProfile()
+        +viewRideHistory()
+    }
+    class DashboardPage {
+        -userName
+        -activeRides
+        -sosStatus
+        +loadDashboardData()
+        +displayActiveRides()
+    }
+    class RideDetails {
+        -pickupLocation
+        -dropLocation
+        -driverDetails
+        -fareEstimate
+        +calculateFare()
+        +generateReceipt()
+    }
+
+    User --> LoginPage : -Association
+    DashboardPage --|> LoginPage 
+    DashboardPage ..> User : -Dependency
+    RideDetails ..|> User : -Aggregation
+    DashboardPage ..o RideDetails

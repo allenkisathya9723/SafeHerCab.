@@ -1,0 +1,11 @@
+classDiagram
+    class LoginPage
+    class Faculty
+    class ResearchDetailsPage
+    class ResearchImpact
+
+    Faculty --> LoginPage : -Association
+    ResearchDetailsPage --|> LoginPage 
+    ResearchDetailsPage ..> Faculty : -Dependency
+    ResearchImpact ..|> Faculty : -Aggregation
+    ResearchDetailsPage ..o ResearchImpact 

@@ -1,0 +1,272 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeHer Ride</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+  <nav class="navbar" id="navbar">
+    <a href="index.html" class="nav-brand">🌸 SafeHer Ride</a>
+    <div class="nav-links">
+      <a href="index.html" class="active">Home</a>
+      <a href="booking.html">Book Ride</a>
+      <a href="history.html">History</a>
+      <a href="#safety">Safety</a>
+    </div>
+    <a href="auth.html" class="btn btn-primary" id="navAuthBtn">Get Started</a>
+  </nav>
+
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <div class="badge badge-primary">🛡️ Hyderabad's #1 Women-Only Cab</div>
+        <h1 class="hero-title">Your Safety,<br />Our Responsibility.</h1>
+        <p class="hero-subtitle">
+          Book cabs, autos, and bikes driven exclusively by verified female drivers.
+          Real-time tracking, SOS emergency alerts, and guardian monitoring in one app.
+        </p>
+        <a href="auth.html" class="btn btn-primary btn-lg">Book a Ride</a>
+      </div>
+      <div class="hero-visual">
+        <div class="phone-mockup">
+          <div class="phone-screen">
+             <div class="phone-map">📍</div>
+             <div class="phone-driver">
+                <img src="/img/driver-sample.jpg" alt="Driver" />
+                <span>Anjali Reddy - ⭐ 4.9</span>
+             </div>
+             <button class="phone-btn">🌸 Track Live Ride</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="features">
+    <div class="container features-grid">
+      <div class="feature-card">
+        <h3>👩 Female Drivers Only</h3>
+        <p>Verified women drivers with safety training and background checks.</p>
+      </div>
+      <div class="feature-card">
+        <h3>📍 Real-Time Live Tracking</h3>
+        <p>Track your ride live and instantly share location with family.</p>
+      </div>
+      <div class="feature-card">
+        <h3>🚨 One-Touch SOS</h3>
+        <p>Instantly alert guardian and nearest police station.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <p>🌸 SafeHer Ride - Building a safer commute for women in Hyderabad.</p>
+    </div>
+  </footer>
+  <script src="/js/main.js"></script>
+</body>
+</html>
+
+// public/js/main.js
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    
+    if (token && userStr) {
+        const user = JSON.parse(userStr);
+        const authBtn = document.getElementById('navAuthBtn');
+        if (authBtn) {
+            authBtn.textContent = 'Dashboard';
+            authBtn.href = 'booking.html';
+        }
+    }
+    
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            if(targetId === '#') return;
+            const element = document.querySelector(targetId);
+            if(element) {
+                element.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    });
+});
+
+function logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = 'auth.html';
+}
+
+// server.js
+require('dotenv').config();
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const helmet = require('helmet');
+const path = require('path');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*', methods: ['GET', 'POST'] } });
+
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/safehercab')
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB error:', err));
+
+io.on('connection', (socket) => {
+  socket.on('driverJoin', ({ bookingId }) => socket.join(bookingId));
+  socket.on('riderJoin', ({ bookingId }) => socket.join(bookingId));
+  socket.on('locationUpdate', (data) => {
+    io.to(data.bookingId).emit('locationUpdate', data);
+  });
+  socket.on('triggerSOS', (data) => {
+    io.to(data.bookingId).emit('sosAlert', data);
+    io.to('admin').emit('sosAlert', data);
+  });
+});
+app.set('io', io);
+
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/booking', require('./routes/booking'));
+app.use('/api/drivers', require('./routes/drivers'));
+app.use('/api/emergency', require('./routes/emergency'));
+
+server.listen(process.env.PORT || 3000, () => {
+  console.log('SafeHerCab running on Port 3000');
+});
+
+// routes/booking.js
+const expressBooking = require('express');
+const routerBooking = expressBooking.Router();
+const { getDistance } = require('../utils/geofence');
+const { v4: uuidv4 } = require('uuid');
+
+const bookings = new Map();
+const FARE_RATES = { Cab: 12, Auto: 8, Bike: 5 };
+
+routerBooking.post('/estimate', (req, res) => {
+    try {
+        const { pickupLat, pickupLng, dropLat, dropLng } = req.body;
+        const distKm = getDistance(pickupLat, pickupLng, dropLat, dropLng);
+        res.json({ 
+            success: true, 
+            fare: Math.round((distKm * FARE_RATES['Cab']) + 40),
+            distance: distKm.toFixed(2)
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+routerBooking.post('/create', (req, res) => {
+    try {
+        const { userId, pickupLat, pickupLng, dropLat, dropLng, vehicleType, guardianPhone } = req.body;
+        const bookingId = `BK${Date.now()}`;
+        const distKm = getDistance(pickupLat, pickupLng, dropLat, dropLng);
+        const fare = Math.round((distKm * FARE_RATES[vehicleType || 'Cab']) + 40);
+
+        const booking = {
+            id: bookingId,
+            userId,
+            vehicleType: vehicleType || 'Cab',
+            distance: distKm.toFixed(2),
+            estimatedFare: fare,
+            status: 'pending',
+            guardianPhone,
+            guardianToken: uuidv4(),
+            sosTriggered: false,
+            createdAt: new Date()
+        };
+
+        bookings.set(bookingId, booking);
+        res.json({ success: true, bookingId, booking });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+routerBooking.patch('/:id/status', (req, res) => {
+    const booking = bookings.get(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    booking.status = req.body.status;
+    res.json({ success: true, booking });
+});
+module.exports = routerBooking;
+
+// routes/emergency.js
+const expressEmergency = require('express');
+const routerEmergency = expressEmergency.Router();
+const { sendSOSAlert, sendPoliceAlert } = require('../utils/smsHelper');
+const { findNearestStations } = require('../data/hyderabadPoliceStations');
+
+routerEmergency.post('/sos', async (req, res) => {
+    try {
+        const { bookingId, userId, lat, lng, guardianPhone } = req.body;
+        const io = req.app.get('io');
+        
+        const sosData = { bookingId, location: { lat, lng }, time: new Date() };
+        if (io) io.to(bookingId).emit('sosAlert', sosData);
+
+        const [nearestPS] = findNearestStations(lat, lng, 1);
+        const locationLink = `https://maps.google.com/?q=${lat},${lng}`;
+
+        if (guardianPhone) {
+            await sendSOSAlert(guardianPhone, locationLink);
+        }
+        if (nearestPS && nearestPS.phone) {
+            await sendPoliceAlert(nearestPS.phone, locationLink);
+        }
+
+        res.json({ success: true, nearestPoliceStation: nearestPS });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+module.exports = routerEmergency;
+
+// utils/geofence.js
+function getDistanceCalc(lat1, lon1, lat2, lon2) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function isInHyderabadCheck(lat, lng) {
+    const hydCenterLat = 17.3850;
+    const hydCenterLng = 78.4867;
+    const maxRadius = 30;
+    return getDistanceCalc(lat, lng, hydCenterLat, hydCenterLng) <= maxRadius;
+}
+module.exports = { getDistance: getDistanceCalc, isInHyderabad: isInHyderabadCheck };
+
+// utils/smsHelper.js
+const axiosSMS = require('axios');
+async function sendSOSAlertMsg(phone, locationLink) {
+    console.log(`Sending SOS SMS to Guardian ${phone}: Emergency Alert! Location: ${locationLink}`);
+    return { success: true };
+}
+async function sendPoliceAlertMsg(phone, locationLink) {
+    console.log(`Sending SMS to Police ${phone}: SOS Triggered! Location: ${locationLink}`);
+    return { success: true };
+}
+module.exports = { sendSOSAlert: sendSOSAlertMsg, sendPoliceAlert: sendPoliceAlertMsg };

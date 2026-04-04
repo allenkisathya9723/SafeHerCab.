@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeHerCab Activity Diagram (Fixed Structure)</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default'
+        });
+    </script>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; padding: 20px; background-color: #ffffff; }
+        .mermaid { background-color: #ffffff; }
+    </style>
+</head>
+<body>
+
+<div class="mermaid">
+flowchart TD
+    %% Natural line breaks naturally enforce square shapes without breaking UML layout!
+    classDef square fill:#fff,stroke:#000,stroke-width:1.5px,rx:0,ry:0,color:#000
+    classDef diamond fill:#fff,stroke:#000,stroke-width:1.5px,color:#000
+    classDef startNode fill:#000,stroke:#000
+    classDef endNode fill:#fff,stroke:#000,stroke-width:2.5px
+    
+    Start(( )):::startNode
+    
+    Open["Open<br><br>SafeHerCab<br><br>App"]:::square
+    Enter["Enter<br><br>Pickup and<br>Drop-off<br>Location"]:::square
+    View["View<br><br>Ride<br><br>Options"]:::square
+    Select["Select<br><br>Preferred<br><br>Ride"]:::square
+    
+    Diamond{"Available<br>Female<br>Drivers?"}:::diamond
+    
+    Book["Book<br><br>Ride"]:::square
+    Msg1["Display<br><br>Message:<br>No Driver<br>Available"]:::square
+    
+    Monitor["Monitor<br><br>Ride<br><br>Progress"]:::square
+    
+    EndRide["End Ride /<br><br>Rate<br><br>Driver"]:::square
+    Msg2["Display<br><br>Message.<br>No Driver<br>Available"]:::square
+    
+    Close["Close<br><br>App"]:::square
+    
+    End1((( ))):::endNode
+    End2((( ))):::endNode
+
+    %% Absolutely identical structure based on the central spine and right-side offshoots
+    Start --> Open
+    Open --> Enter
+    Enter --> View
+    View --> Select
+    Select --> Diamond
+    
+    Diamond -- Yes --> Book
+    Diamond -- No --> Msg1
+    
+    Book --> Monitor
+    
+    Monitor --> EndRide
+    Monitor --> Msg2
+    
+    EndRide --> Close
+    Msg2 --> Close
+    
+    Close --> End1
+    Msg1 --> End2
+    End1 --> End2
+</div>
+
+</body>
+</html>
